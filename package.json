@@ -1,0 +1,16 @@
+{
+  "name": "ilist",
+  "version": "1.0.0",
+  "description": "采购清单管理系统",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
