@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>装修已购清单</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="list">
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="header-left">
+        <h1>🏠 装修已购清单</h1>
+        <p class="subtitle">记录每一件为新家选购的好物</p>
+      </div>
+      <a href="add.html" class="btn-add">
+        <span class="btn-add-icon">+</span>
+        <span>添加商品</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card list-panel">
+      <div class="list-header">
+        <h2>全部商品</h2>
+        <div class="stats">
+          <span class="chip" id="count-chip">共 0 件</span>
+          <span class="chip chip-accent" id="total-chip">总计 ¥0.00</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" id="search" placeholder="搜索商品名称 / 备注..." />
+        <select id="filter-category">
+          <option value="">全部分类</option>
+          <option value="家具">家具</option>
+          <option value="家电">家电</option>
+          <option value="灯具">灯具</option>
+          <option value="建材">建材</option>
+          <option value="软装">软装</option>
+          <option value="厨房">厨房</option>
+          <option value="卫浴">卫浴</option>
+          <option value="其他">其他</option>
+        </select>
+        <select id="filter-status">
+          <option value="">全部状态</option>
+          <option value="待发货">待发货</option>
+          <option value="已发货">已发货</option>
+          <option value="已收货">已收货</option>
+          <option value="已完成">已完成</option>
+        </select>
+        <button id="export-btn" class="btn-ghost" type="button">导出数据</button>
+        <label class="btn-ghost" for="import-file" style="cursor:pointer;">导入数据</label>
+        <input type="file" id="import-file" accept="application/json" hidden />
+      </div>
+
+      <ul id="item-list" class="item-list"></ul>
+
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">📦</div>
+        <p>还没有商品，<a href="add.html" class="empty-link">去添加第一件</a></p>
+      </div>
+    </section>
+  </main>
+
+  <div id="image-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-body">
+      <button class="modal-prev" id="modal-prev">&#8592;</button>
+      <img id="modal-img" alt="大图预览" />
+      <button class="modal-next" id="modal-next">&#8594;</button>
+      <button class="modal-close" data-close>&#215;</button>
+      <div class="modal-counter" id="modal-counter"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>数据保存在浏览器本地（localStorage），换设备请使用"导出数据"备份</small>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

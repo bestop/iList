@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>添加商品 - 装修已购清单</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="add">
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="index.html" class="back-link">‹ 返回清单</a>
+        <h1>添加新商品</h1>
+        <p class="subtitle">填写商品信息并上传图片</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card add-panel add-panel-single">
+      <form id="item-form" autocomplete="off">
+        <div class="row">
+          <label for="name">商品名称</label>
+          <input type="text" id="name" required placeholder="例如：北欧风吊灯" />
+        </div>
+
+        <div class="row two-col">
+          <div>
+            <label for="category">分类</label>
+            <select id="category">
+              <option value="家具">家具</option>
+              <option value="家电">家电</option>
+              <option value="灯具">灯具</option>
+              <option value="建材">建材</option>
+              <option value="软装">软装</option>
+              <option value="厨房">厨房</option>
+              <option value="卫浴">卫浴</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div>
+            <label for="status">发货/收货状态</label>
+            <select id="status">
+              <option value="待发货">待发货</option>
+              <option value="已发货">已发货</option>
+              <option value="已收货">已收货</option>
+              <option value="已完成">已完成</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row two-col">
+          <div>
+            <label for="price">单价 (元)</label>
+            <input type="number" id="price" min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div>
+            <label for="qty">数量</label>
+            <input type="number" id="qty" min="1" step="1" value="1" />
+          </div>
+        </div>
+
+        <div class="row two-col">
+          <div>
+            <label for="date">购买日期</label>
+            <input type="date" id="date" />
+          </div>
+          <div>
+            <label for="shop">购买渠道 / 店铺</label>
+            <input type="text" id="shop" placeholder="例如：宜家 / 淘宝某店" />
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="note">备注</label>
+          <textarea id="note" rows="3" placeholder="规格、颜色、型号等"></textarea>
+        </div>
+
+        <div class="row">
+          <label>商品图片（可上传多张，最多 9 张）</label>
+          <div class="image-uploader">
+            <input type="file" id="image" accept="image/*" multiple />
+            <div class="image-preview-grid" id="image-preview-grid"></div>
+          </div>
+        </div>
+
+        <div class="row actions actions-stretch">
+          <button type="reset" class="btn-ghost" id="reset-btn">清空</button>
+          <button type="submit" class="btn-primary">保存到清单</button>
+          <a href="index.html" class="btn-ghost">取消</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="image-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-body">
+      <button class="modal-prev" id="modal-prev">&#8592;</button>
+      <img id="modal-img" alt="大图预览" />
+      <button class="modal-next" id="modal-next">&#8594;</button>
+      <button class="modal-close" data-close>&#215;</button>
+      <div class="modal-counter" id="modal-counter"></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>数据保存在浏览器本地（localStorage）</small>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
