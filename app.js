@@ -1,124 +1,239 @@
 (function () {
   "use strict";
 
-  const API_BASE = '/api';
-  const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
-  const MAX_IMAGES = 9;
+  var API_BASE = '/api';
+  var MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+  var MAX_IMAGES = 9;
+  var STORAGE_KEY = 'ilist_items';
 
-  const page = document.body.getAttribute("data-page");
+  var page = document.body.getAttribute("data-page");
 
-  const dateInput = document.getElementById("date");
+  var dateInput = document.getElementById("date");
 
-  const modal = document.getElementById("image-modal");
-  const modalImg = document.getElementById("modal-img");
-  const modalPrev = document.getElementById("modal-prev");
-  const modalNext = document.getElementById("modal-next");
-  const modalCounter = document.getElementById("modal-counter");
+  var modal = document.getElementById("image-modal");
+  var modalImg = document.getElementById("modal-img");
+  var modalPrev = document.getElementById("modal-prev");
+  var modalNext = document.getElementById("modal-next");
+  var modalCounter = document.getElementById("modal-counter");
 
-  const addForm = document.getElementById("item-form");
-  const addFileInput = document.getElementById("image");
-  const addPreviewGrid = document.getElementById("image-preview-grid");
-  const resetBtn = document.getElementById("reset-btn");
+  var addForm = document.getElementById("item-form");
+  var addFileInput = document.getElementById("image");
+  var addPreviewGrid = document.getElementById("image-preview-grid");
+  var resetBtn = document.getElementById("reset-btn");
 
-  const itemList = document.getElementById("item-list");
-  const emptyState = document.getElementById("empty-state");
-  const searchInput = document.getElementById("search");
-  const filterCategory = document.getElementById("filter-category");
-  const filterStatus = document.getElementById("filter-status");
-  const countChip = document.getElementById("count-chip");
-  const totalChip = document.getElementById("total-chip");
-  const exportBtn = document.getElementById("export-btn");
-  const importFile = document.getElementById("import-file");
+  var itemList = document.getElementById("item-list");
+  var emptyState = document.getElementById("empty-state");
+  var searchInput = document.getElementById("search");
+  var filterCategory = document.getElementById("filter-category");
+  var filterStatus = document.getElementById("filter-status");
+  var countChip = document.getElementById("count-chip");
+  var totalChip = document.getElementById("total-chip");
+  var exportBtn = document.getElementById("export-btn");
+  var importFile = document.getElementById("import-file");
 
-  let draftImages = [];
-  let items = [];
+  var draftImages = [];
+  var items = [];
+  var useApi = false;
 
   if (dateInput && !dateInput.value) {
     dateInput.value = todayStr();
   }
 
-  async function loadItems() {
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function localLoad() {
     try {
-      const response = await fetch(`${API_BASE}/items`);
-      if (!response.ok) throw new Error('Failed to load items');
-      items = await response.json();
-      return items;
-    } catch (error) {
-      console.error('Error loading items:', error);
-      alert('加载商品列表失败，请刷新页面重试');
-      return [];
+      var data = localStorage.getItem(STORAGE_KEY);
+      items = data ? JSON.parse(data) : [];
+    } catch (e) {
+      items = [];
+    }
+    return items;
+  }
+
+  function localSave() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.error('localStorage save error:', e);
     }
   }
 
-  async function saveItems() {
+  async function loadItems() {
     try {
-      const response = await fetch(`${API_BASE}/items`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(items[0])
-      });
-      if (!response.ok) throw new Error('Failed to save item');
-      return await response.json();
+      var response = await fetch(API_BASE + '/items');
+      if (!response.ok) throw new Error('API not available');
+      items = await response.json();
+      useApi = true;
+      return items;
     } catch (error) {
-      console.error('Error saving items:', error);
-      alert('保存失败，请重试');
+      console.log('API not available, using localStorage');
+      useApi = false;
+      return localLoad();
+    }
+  }
+
+  async function saveItem(item) {
+    if (useApi) {
+      try {
+        var response = await fetch(API_BASE + '/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+        if (!response.ok) throw new Error('Failed to save item');
+        return await response.json();
+      } catch (error) {
+        console.error('API save error:', error);
+        return null;
+      }
+    } else {
+      item.id = generateId();
+      item.createdAt = Date.now();
+      items.unshift(item);
+      localSave();
+      return item;
     }
   }
 
   async function deleteItem(id) {
-    try {
-      const response = await fetch(`${API_BASE}/items/${id}`, {
-        method: 'DELETE'
-      });
-      if (!response.ok) throw new Error('Failed to delete item');
+    if (useApi) {
+      try {
+        var response = await fetch(API_BASE + '/items/' + id, {
+          method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Failed to delete item');
+        return true;
+      } catch (error) {
+        console.error('API delete error:', error);
+        return false;
+      }
+    } else {
+      items = items.filter(function (i) { return i.id !== id; });
+      localSave();
       return true;
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      alert('删除失败，请重试');
-      return false;
     }
   }
 
   async function updateItem(id, data) {
-    try {
-      const response = await fetch(`${API_BASE}/items/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error('Failed to update item');
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating item:', error);
-      alert('更新失败，请重试');
+    if (useApi) {
+      try {
+        var response = await fetch(API_BASE + '/items/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Failed to update item');
+        return await response.json();
+      } catch (error) {
+        console.error('API update error:', error);
+        return null;
+      }
+    } else {
+      var idx = items.findIndex(function (i) { return i.id === id; });
+      if (idx !== -1) {
+        Object.assign(items[idx], data);
+        localSave();
+        return items[idx];
+      }
+      return null;
     }
   }
 
   async function importItems(data) {
-    try {
-      const response = await fetch(`${API_BASE}/import`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+    if (useApi) {
+      try {
+        var response = await fetch(API_BASE + '/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error('Failed to import items');
+        return await response.json();
+      } catch (error) {
+        console.error('API import error:', error);
+        return null;
+      }
+    } else {
+      data.forEach(function (item) {
+        if (!item.id) item.id = generateId();
+        if (!item.createdAt) item.createdAt = Date.now();
       });
-      if (!response.ok) throw new Error('Failed to import items');
-      return await response.json();
-    } catch (error) {
-      console.error('Error importing items:', error);
-      alert('导入失败，请重试');
+      var existingIds = items.map(function (i) { return i.id; });
+      data.forEach(function (item) {
+        if (existingIds.indexOf(item.id) === -1) {
+          items.push(item);
+        } else {
+          var idx = items.findIndex(function (i) { return i.id === item.id; });
+          if (idx !== -1) Object.assign(items[idx], item);
+        }
+      });
+      localSave();
+      return { message: 'Data imported successfully', count: data.length };
+    }
+  }
+
+  async function loadItemForEdit(id) {
+    var allItems;
+    if (useApi) {
+      try {
+        var response = await fetch(API_BASE + '/items');
+        if (!response.ok) throw new Error('Failed to load items');
+        allItems = await response.json();
+      } catch (error) {
+        console.error('Error loading item:', error);
+        alert('加载商品失败，请重试');
+        return;
+      }
+    } else {
+      allItems = items;
+    }
+
+    var item = allItems.find(function (i) { return i.id === id; });
+
+    if (item) {
+      document.getElementById("name").value = item.name || "";
+      document.getElementById("category").value = item.category || "其他";
+      document.getElementById("status").value = item.status || "待发货";
+      document.getElementById("price").value = item.price || "";
+      document.getElementById("qty").value = item.qty || 1;
+      document.getElementById("date").value = item.date || todayStr();
+      document.getElementById("shop").value = item.shop || "";
+      document.getElementById("note").value = item.note || "";
+
+      draftImages = (item.images || []).slice();
+      renderDraftImages();
+
+      document.querySelector('.header-left h1').textContent = "编辑商品";
+      document.querySelector('.header-left .subtitle').textContent = "修改商品信息";
+      document.querySelector('button[type="submit"]').textContent = "保存修改";
+    } else {
+      alert('未找到该商品');
+      window.location.href = "index.html";
     }
   }
 
   if (page === "add") {
+    var urlParams = new URLSearchParams(window.location.search);
+    var editId = urlParams.get('id');
+
+    loadItems().then(function () {
+      if (editId) {
+        loadItemForEdit(editId);
+      }
+    });
+
     renderDraftImages();
 
     if (addFileInput) {
       addFileInput.addEventListener("change", function (e) {
-        const files = Array.from(e.target.files || []);
+        var files = Array.from(e.target.files || []);
         if (!files.length) return;
 
-        let added = 0;
-        let processed = 0;
+        var added = 0;
+        var processed = 0;
 
         files.forEach(function (file) {
           if (draftImages.length + added >= MAX_IMAGES) {
@@ -130,7 +245,7 @@
             alert("图片「" + file.name + "」过大（>2MB），已跳过");
             return;
           }
-          const reader = new FileReader();
+          var reader = new FileReader();
           reader.onload = function (ev) {
             compressImage(ev.target.result, 900, 0.82, function (dataUrl) {
               draftImages.push(dataUrl);
@@ -153,7 +268,7 @@
           draftImages = [];
           renderDraftImages();
           if (dateInput) dateInput.value = todayStr();
-          const qtyInput = document.getElementById("qty");
+          var qtyInput = document.getElementById("qty");
           if (qtyInput) qtyInput.value = 1;
         }, 0);
       });
@@ -161,17 +276,17 @@
 
     if (addPreviewGrid) {
       addPreviewGrid.addEventListener("click", function (e) {
-        const delBtn = e.target.closest(".img-thumb-del");
+        var delBtn = e.target.closest(".img-thumb-del");
         if (delBtn) {
-          const idx = parseInt(delBtn.getAttribute("data-idx"), 10);
+          var idx = parseInt(delBtn.getAttribute("data-idx"), 10);
           draftImages.splice(idx, 1);
           renderDraftImages();
           return;
         }
-        const img = e.target.closest(".img-thumb-wrap img");
+        var img = e.target.closest(".img-thumb-wrap img");
         if (img) {
-          const idx = parseInt(img.getAttribute("data-idx"), 10);
-          openModal(draftImages.slice(), idx);
+          var idx2 = parseInt(img.getAttribute("data-idx"), 10);
+          openModal(draftImages.slice(), idx2);
         }
       });
     }
@@ -179,11 +294,11 @@
     if (addForm) {
       addForm.addEventListener("submit", async function (e) {
         e.preventDefault();
-        const name = document.getElementById("name").value.trim();
+        var name = document.getElementById("name").value.trim();
         if (!name) return;
 
-        const item = {
-          name,
+        var item = {
+          name: name,
           category: document.getElementById("category").value || "其他",
           status: document.getElementById("status").value || "待发货",
           price: parseFloat(document.getElementById("price").value) || 0,
@@ -194,31 +309,35 @@
           images: draftImages.slice()
         };
 
-        items.unshift(item);
-        const savedItem = await saveItems();
-        
-        if (savedItem) {
-          window.location.href = "index.html";
+        if (editId) {
+          var updatedItem = await updateItem(editId, item);
+          if (updatedItem) {
+            window.location.href = "index.html";
+          }
+        } else {
+          var savedItem = await saveItem(item);
+          if (savedItem) {
+            window.location.href = "index.html";
+          }
         }
       });
     }
   }
 
   if (page === "list") {
-    loadItems().then(() => render());
+    loadItems().then(function () { render(); });
 
     if (searchInput) searchInput.addEventListener("input", render);
     if (filterCategory) filterCategory.addEventListener("change", render);
     if (filterStatus) filterStatus.addEventListener("change", render);
 
     if (exportBtn) {
-      exportBtn.addEventListener("click", async function () {
-        const data = await loadItems();
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
+      exportBtn.addEventListener("click", function () {
+        var blob = new Blob([JSON.stringify(items, null, 2)], {
           type: "application/json",
         });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
         a.href = url;
         a.download = "采购清单-" + todayStr() + ".json";
         a.click();
@@ -228,15 +347,15 @@
 
     if (importFile) {
       importFile.addEventListener("change", async function (e) {
-        const file = e.target.files && e.target.files[0];
+        var file = e.target.files && e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = async function () {
           try {
-            const data = JSON.parse(reader.result);
+            var data = JSON.parse(reader.result);
             if (!Array.isArray(data)) throw new Error("格式不对");
             if (confirm("将导入 " + data.length + " 条记录并合并到现有清单，是否继续？")) {
-              const result = await importItems(data);
+              var result = await importItems(data);
               if (result) {
                 items = await loadItems();
                 render();
@@ -254,18 +373,25 @@
 
     if (itemList) {
       itemList.addEventListener("click", async function (e) {
-        const delBtn = e.target.closest("[data-del]");
-        const statusBtn = e.target.closest(".status-btn");
-        const galleryPrev = e.target.closest(".item-gallery-prev");
-        const galleryNext = e.target.closest(".item-gallery-next");
-        const galleryImg = e.target.closest(".item-gallery-img");
+        var delBtn = e.target.closest("[data-del]");
+        var editBtn = e.target.closest("[data-edit]");
+        var statusBtn = e.target.closest(".status-btn");
+        var galleryPrev = e.target.closest(".item-gallery-prev");
+        var galleryNext = e.target.closest(".item-gallery-next");
+        var galleryImg = e.target.closest(".item-gallery-img");
+
+        if (editBtn) {
+          var editId = editBtn.getAttribute("data-edit");
+          window.location.href = "add.html?id=" + editId;
+          return;
+        }
 
         if (delBtn) {
-          const id = delBtn.getAttribute("data-del");
+          var delId = delBtn.getAttribute("data-del");
           if (confirm("确定删除此商品？")) {
-            const success = await deleteItem(id);
+            var success = await deleteItem(delId);
             if (success) {
-              items = items.filter(function (i) { return i.id !== id; });
+              items = items.filter(function (i) { return i.id !== delId; });
               render();
             }
           }
@@ -273,14 +399,14 @@
         }
 
         if (statusBtn) {
-          const id = statusBtn.getAttribute("data-id");
-          const target = items.find(function (i) { return i.id === id; });
+          var statusId = statusBtn.getAttribute("data-id");
+          var target = items.find(function (i) { return i.id === statusId; });
           if (target) {
-            const order = ["待发货", "已发货", "已收货", "已完成"];
-            const idx = order.indexOf(target.status);
-            const newStatus = order[(idx + 1) % order.length];
-            
-            const updatedItem = await updateItem(id, { status: newStatus });
+            var order = ["待发货", "已发货", "已收货", "已完成"];
+            var idx = order.indexOf(target.status);
+            var newStatus = order[(idx + 1) % order.length];
+
+            var updatedItem = await updateItem(statusId, { status: newStatus });
             if (updatedItem) {
               target.status = newStatus;
               render();
@@ -290,27 +416,27 @@
         }
 
         if (galleryPrev || galleryNext) {
-          const li = e.target.closest("li.item");
-          const idx = parseInt(li.getAttribute("data-gallery-idx") || "0", 10);
-          const images = JSON.parse(li.getAttribute("data-images") || "[]");
-          const total = images.length;
+          var li = e.target.closest("li.item");
+          var gIdx = parseInt(li.getAttribute("data-gallery-idx") || "0", 10);
+          var images = JSON.parse(li.getAttribute("data-images") || "[]");
+          var total = images.length;
           if (!total) return;
-          let newIdx = idx + (galleryPrev ? -1 : 1);
+          var newIdx = gIdx + (galleryPrev ? -1 : 1);
           if (newIdx < 0) newIdx = total - 1;
           if (newIdx >= total) newIdx = 0;
           li.setAttribute("data-gallery-idx", newIdx);
-          const imgEl = li.querySelector(".item-gallery-img");
+          var imgEl = li.querySelector(".item-gallery-img");
           if (imgEl) imgEl.src = images[newIdx];
-          const cntEl = li.querySelector(".item-gallery-counter");
+          var cntEl = li.querySelector(".item-gallery-counter");
           if (cntEl) cntEl.textContent = (newIdx + 1) + "/" + total;
           return;
         }
 
         if (galleryImg) {
-          const li = e.target.closest("li.item");
-          const idx = parseInt(li.getAttribute("data-gallery-idx") || "0", 10);
-          const images = JSON.parse(li.getAttribute("data-images") || "[]");
-          openModal(images, idx);
+          var li2 = e.target.closest("li.item");
+          var gIdx2 = parseInt(li2.getAttribute("data-gallery-idx") || "0", 10);
+          var images2 = JSON.parse(li2.getAttribute("data-images") || "[]");
+          openModal(images2, gIdx2);
         }
       });
     }
@@ -529,6 +655,15 @@
 
     var footer = document.createElement("div");
     footer.className = "item-footer";
+
+    var editBtn = document.createElement("button");
+    editBtn.className = "btn-edit";
+    editBtn.setAttribute("data-edit", item.id);
+    editBtn.textContent = "编辑";
+    editBtn.type = "button";
+    editBtn.title = "编辑此商品";
+    footer.appendChild(editBtn);
+
     var del = document.createElement("button");
     del.className = "btn-danger";
     del.setAttribute("data-del", item.id);

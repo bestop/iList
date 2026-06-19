@@ -349,6 +349,18 @@ button {
   background: var(--danger-bg);
 }
 
+.btn-edit {
+  background: transparent;
+  color: var(--accent);
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-right: 8px;
+}
+
+.btn-edit:hover {
+  background: var(--accent-light);
+}
+
 .list-header {
   display: flex;
   align-items: center;
