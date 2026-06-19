@@ -1,6 +1,12 @@
 import { sql, initializeDatabase } from './db';
 
 export default async function handler(req, res) {
+  try {
+    await initializeDatabase();
+  } catch (e) {
+    console.error('Failed to initialize database:', e);
+  }
+
   if (req.method === 'GET') {
     try {
       const result = await sql`
