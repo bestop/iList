@@ -1,7 +1,9 @@
-import { sql } from './_db.js';
+import { sql, ensureSchema } from './_db.js';
 import { getUserFromRequest } from './_auth.js';
 
 export default async function handler(req, res) {
+  await ensureSchema();
+
   if (req.method === 'POST') {
     const user = await getUserFromRequest(req);
     if (!user) {
@@ -23,7 +25,7 @@ export default async function handler(req, res) {
         const createdAt = item.createdAt || Date.now();
 
         await sql`
-          INSERT INTO items (id, name, category, status, price, qty, date, shop, note, images, created_at)
+          INSERT INTO items (id, name, category, status, price, qty, date, shop, note, images, user_id, created_at)
           VALUES (
             ${id},
             ${name},
@@ -35,6 +37,7 @@ export default async function handler(req, res) {
             ${shop || ''},
             ${note || ''},
             ${JSON.stringify(images || [])},
+            ${user.userId},
             ${createdAt}
           )
           ON CONFLICT (id) DO UPDATE SET

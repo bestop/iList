@@ -1,10 +1,16 @@
-import { sql } from './_db.js';
-import { getUserFromRequest, ensureUsersTable } from './_auth.js';
+import { sql, ensureSchema } from './_db.js';
+import { getUserFromRequest } from './_auth.js';
 
 export default async function handler(req, res) {
+  await ensureSchema();
+
   if (req.method === 'GET') {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return res.status(200).json([]);
+    }
     try {
-      const result = await sql`SELECT * FROM items ORDER BY created_at DESC`;
+      const result = await sql`SELECT * FROM items WHERE user_id = ${user.userId} ORDER BY created_at DESC`;
       res.status(200).json(result);
     } catch (error) {
       console.error('Error fetching items:', error);
@@ -22,7 +28,7 @@ export default async function handler(req, res) {
       const createdAt = Date.now();
 
       const result = await sql`
-        INSERT INTO items (id, name, category, status, price, qty, date, shop, note, images, created_at)
+        INSERT INTO items (id, name, category, status, price, qty, date, shop, note, images, user_id, created_at)
         VALUES (
           ${id},
           ${name},
@@ -34,6 +40,7 @@ export default async function handler(req, res) {
           ${shop || ''},
           ${note || ''},
           ${JSON.stringify(images || [])},
+          ${user.userId},
           ${createdAt}
         )
         RETURNING *

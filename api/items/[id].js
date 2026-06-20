@@ -1,7 +1,8 @@
-import { sql } from '../_db.js';
+import { sql, ensureSchema } from '../_db.js';
 import { getUserFromRequest } from '../_auth.js';
 
 export default async function handler(req, res) {
+  await ensureSchema();
   const { id } = req.query;
 
   if (req.method === 'PUT') {
@@ -29,7 +30,7 @@ export default async function handler(req, res) {
 
       const result = await sql`
         UPDATE items SET ${sql.join(sets, sql`, `)}
-        WHERE id = ${id}
+        WHERE id = ${id} AND user_id = ${user.userId}
         RETURNING *
       `;
 
@@ -49,7 +50,7 @@ export default async function handler(req, res) {
     }
     try {
       const result = await sql`
-        DELETE FROM items WHERE id = ${id} RETURNING *
+        DELETE FROM items WHERE id = ${id} AND user_id = ${user.userId} RETURNING *
       `;
 
       if (result.length === 0) {
