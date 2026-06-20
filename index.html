@@ -16,12 +16,26 @@
         <h1>📦 采购清单</h1>
         <p class="subtitle">记录每一件采购的商品，轻松管理购物清单</p>
       </div>
-      <a href="add.html" class="btn-add">
-        <span class="btn-add-icon">+</span>
-        <span>添加商品</span>
-      </a>
+      <div class="header-right">
+        <button id="auth-login-btn" class="btn-login" type="button">登录</button>
+        <div id="user-info" class="user-info hidden">
+          <span class="user-name"></span>
+          <span class="user-role"></span>
+          <button id="logout-btn" class="btn-logout" type="button">退出</button>
+        </div>
+        <a href="add.html" id="btn-add" class="btn-add hidden">
+          <span class="btn-add-icon">+</span>
+          <span>添加商品</span>
+        </a>
+      </div>
     </div>
   </header>
+
+  <div id="guest-banner" class="guest-banner">
+    <div class="container">
+      <span>👀 预览模式 — 登录后可管理商品数据</span>
+    </div>
+  </div>
 
   <main class="container">
     <section class="card list-panel">
@@ -44,6 +58,7 @@
           <option value="软装">软装</option>
           <option value="厨房">厨房</option>
           <option value="卫浴">卫浴</option>
+          <option value="数码">数码</option>
           <option value="其他">其他</option>
         </select>
         <select id="filter-status">
@@ -66,6 +81,38 @@
       </div>
     </section>
   </main>
+
+  <div id="auth-modal" class="modal hidden">
+    <div class="auth-modal-backdrop"></div>
+    <div class="auth-modal">
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active" type="button">登录</button>
+        <button id="tab-register" class="auth-tab" type="button">注册</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <div class="auth-field">
+          <label for="login-username">用户名</label>
+          <input type="text" id="login-username" placeholder="输入用户名" autocomplete="username" required />
+        </div>
+        <div class="auth-field">
+          <label for="login-password">密码</label>
+          <input type="password" id="login-password" placeholder="输入密码" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn-primary auth-submit">登录</button>
+      </form>
+      <form id="register-form" class="auth-form hidden">
+        <div class="auth-field">
+          <label for="register-username">用户名</label>
+          <input type="text" id="register-username" placeholder="2-50个字符" autocomplete="username" required />
+        </div>
+        <div class="auth-field">
+          <label for="register-password">密码</label>
+          <input type="password" id="register-password" placeholder="至少4位" autocomplete="new-password" required />
+        </div>
+        <button type="submit" class="btn-primary auth-submit">注册</button>
+      </form>
+    </div>
+  </div>
 
   <div id="image-modal" class="modal hidden">
     <div class="modal-backdrop" data-close></div>

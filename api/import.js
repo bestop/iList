@@ -1,7 +1,12 @@
 import { sql } from './_db.js';
+import { getUserFromRequest } from './_auth.js';
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return res.status(401).json({ error: '请先登录' });
+    }
     try {
       const importedItems = req.body;
 

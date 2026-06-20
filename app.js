@@ -5,6 +5,7 @@
   var MAX_IMAGE_SIZE = 2 * 1024 * 1024;
   var MAX_IMAGES = 9;
   var STORAGE_KEY = 'ilist_items';
+  var TOKEN_KEY = 'ilist_token';
 
   var page = document.body.getAttribute("data-page");
 
@@ -34,6 +35,97 @@
   var draftImages = [];
   var items = [];
   var useApi = false;
+  var currentUser = null;
+
+  var MOCK_ITEMS = [
+    { id: 'mock1', name: '无线蓝牙耳机', category: '数码', status: '待发货', price: 299, qty: 1, date: '2026-06-18', shop: '京东', note: '降噪款', images: [], createdAt: Date.now() },
+    { id: 'mock2', name: '机械键盘', category: '数码', status: '已发货', price: 459, qty: 1, date: '2026-06-17', shop: '淘宝', note: '红轴', images: [], createdAt: Date.now() - 1000 },
+    { id: 'mock3', name: '显示器支架', category: '家具', status: '已收货', price: 128, qty: 2, date: '2026-06-16', shop: '拼多多', note: '', images: [], createdAt: Date.now() - 2000 },
+    { id: 'mock4', name: 'USB-C 扩展坞', category: '数码', status: '已完成', price: 189, qty: 1, date: '2026-06-15', shop: '京东', note: '7合1', images: [], createdAt: Date.now() - 3000 },
+    { id: 'mock5', name: '台灯', category: '家具', status: '待发货', price: 79, qty: 1, date: '2026-06-14', shop: '', note: '护眼款', images: [], createdAt: Date.now() - 4000 }
+  ];
+
+  function getToken() {
+    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  }
+
+  function setToken(token) {
+    try { localStorage.setItem(TOKEN_KEY, token); } catch { }
+  }
+
+  function clearToken() {
+    try { localStorage.removeItem(TOKEN_KEY); } catch { }
+  }
+
+  function authHeaders() {
+    var token = getToken();
+    return token ? { 'Authorization': 'Bearer ' + token } : {};
+  }
+
+  async function checkAuth() {
+    var token = getToken();
+    if (!token) { currentUser = null; return null; }
+    try {
+      var response = await fetch(API_BASE + '/auth/me', { headers: authHeaders() });
+      var data = await response.json();
+      currentUser = data.user;
+      return currentUser;
+    } catch {
+      currentUser = null;
+      return null;
+    }
+  }
+
+  function updateAuthUI() {
+    var loginBtn = document.getElementById('auth-login-btn');
+    var userInfo = document.getElementById('user-info');
+    var addBtn = document.getElementById('btn-add');
+    var guestBanner = document.getElementById('guest-banner');
+
+    if (currentUser) {
+      if (loginBtn) loginBtn.classList.add('hidden');
+      if (userInfo) {
+        userInfo.classList.remove('hidden');
+        var nameEl = userInfo.querySelector('.user-name');
+        if (nameEl) nameEl.textContent = currentUser.username;
+        var roleEl = userInfo.querySelector('.user-role');
+        if (roleEl) roleEl.textContent = currentUser.role === 'admin' ? '管理员' : '用户';
+      }
+      if (addBtn) addBtn.classList.remove('hidden');
+      if (guestBanner) guestBanner.classList.add('hidden');
+    } else {
+      if (loginBtn) loginBtn.classList.remove('hidden');
+      if (userInfo) userInfo.classList.add('hidden');
+      if (addBtn) addBtn.classList.add('hidden');
+      if (guestBanner) guestBanner.classList.remove('hidden');
+    }
+  }
+
+  function showAuthModal(mode) {
+    var overlay = document.getElementById('auth-modal');
+    var loginForm = document.getElementById('login-form');
+    var registerForm = document.getElementById('register-form');
+    var tabLogin = document.getElementById('tab-login');
+    var tabRegister = document.getElementById('tab-register');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+    if (mode === 'register') {
+      if (loginForm) loginForm.classList.add('hidden');
+      if (registerForm) registerForm.classList.remove('hidden');
+      if (tabLogin) tabLogin.classList.remove('active');
+      if (tabRegister) tabRegister.classList.add('active');
+    } else {
+      if (loginForm) loginForm.classList.remove('hidden');
+      if (registerForm) registerForm.classList.add('hidden');
+      if (tabLogin) tabLogin.classList.add('active');
+      if (tabRegister) tabRegister.classList.remove('active');
+    }
+  }
+
+  function hideAuthModal() {
+    var overlay = document.getElementById('auth-modal');
+    if (overlay) overlay.classList.add('hidden');
+  }
 
   if (dateInput && !dateInput.value) {
     dateInput.value = todayStr();
@@ -78,8 +170,13 @@
   }
 
   async function loadItems() {
+    if (!currentUser) {
+      items = MOCK_ITEMS.map(normalizeItem);
+      useApi = false;
+      return items;
+    }
     try {
-      var response = await fetch(API_BASE + '/items');
+      var response = await fetch(API_BASE + '/items', { headers: authHeaders() });
       if (!response.ok) throw new Error('API not available');
       var data = await response.json();
       items = data.map(normalizeItem);
@@ -97,9 +194,10 @@
       try {
         var response = await fetch(API_BASE + '/items', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
           body: JSON.stringify(item)
         });
+        if (response.status === 401) { handleAuthError(); return null; }
         if (!response.ok) throw new Error('Failed to save item');
         return normalizeItem(await response.json());
       } catch (error) {
@@ -119,8 +217,10 @@
     if (useApi) {
       try {
         var response = await fetch(API_BASE + '/items/' + id, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: authHeaders()
         });
+        if (response.status === 401) { handleAuthError(); return false; }
         if (!response.ok) throw new Error('Failed to delete item');
         return true;
       } catch (error) {
@@ -139,9 +239,10 @@
       try {
         var response = await fetch(API_BASE + '/items/' + id, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
           body: JSON.stringify(data)
         });
+        if (response.status === 401) { handleAuthError(); return null; }
         if (!response.ok) throw new Error('Failed to update item');
         return normalizeItem(await response.json());
       } catch (error) {
@@ -164,9 +265,10 @@
       try {
         var response = await fetch(API_BASE + '/import', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
           body: JSON.stringify(data)
         });
+        if (response.status === 401) { handleAuthError(); return null; }
         if (!response.ok) throw new Error('Failed to import items');
         return await response.json();
       } catch (error) {
@@ -192,11 +294,18 @@
     }
   }
 
+  function handleAuthError() {
+    clearToken();
+    currentUser = null;
+    updateAuthUI();
+    alert('登录已过期，请重新登录');
+  }
+
   async function loadItemForEdit(id) {
     var target;
     if (useApi) {
       try {
-        var response = await fetch(API_BASE + '/items');
+        var response = await fetch(API_BASE + '/items', { headers: authHeaders() });
         if (!response.ok) throw new Error('Failed to load items');
         var allItems = await response.json();
         target = allItems.find(function (i) { return i.id === id; });
@@ -233,13 +342,20 @@
   }
 
   if (page === "add") {
-    var urlParams = new URLSearchParams(window.location.search);
-    var editId = urlParams.get('id');
-
-    loadItems().then(function () {
-      if (editId) {
-        loadItemForEdit(editId);
+    checkAuth().then(function (user) {
+      if (!user) {
+        alert('请先登录');
+        window.location.href = "index.html";
+        return;
       }
+      var urlParams = new URLSearchParams(window.location.search);
+      var editId = urlParams.get('id');
+
+      loadItems().then(function () {
+        if (editId) {
+          loadItemForEdit(editId);
+        }
+      });
     });
 
     renderDraftImages();
@@ -346,7 +462,100 @@
   }
 
   if (page === "list") {
-    loadItems().then(function () { render(); });
+    checkAuth().then(function () {
+      updateAuthUI();
+      loadItems().then(function () { render(); });
+    });
+
+    var loginBtn = document.getElementById('auth-login-btn');
+    if (loginBtn) {
+      loginBtn.addEventListener('click', function () { showAuthModal('login'); });
+    }
+
+    var logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', function () {
+        clearToken();
+        currentUser = null;
+        updateAuthUI();
+        loadItems().then(function () { render(); });
+      });
+    }
+
+    var authModal = document.getElementById('auth-modal');
+    if (authModal) {
+      authModal.addEventListener('click', function (e) {
+        if (e.target === authModal || e.target.classList.contains('auth-modal-backdrop')) {
+          hideAuthModal();
+        }
+      });
+
+      var tabLogin = document.getElementById('tab-login');
+      var tabRegister = document.getElementById('tab-register');
+      if (tabLogin) tabLogin.addEventListener('click', function () { showAuthModal('login'); });
+      if (tabRegister) tabRegister.addEventListener('click', function () { showAuthModal('register'); });
+
+      var loginForm = document.getElementById('login-form');
+      if (loginForm) {
+        loginForm.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          var username = document.getElementById('login-username').value.trim();
+          var password = document.getElementById('login-password').value;
+          if (!username || !password) return;
+          try {
+            var response = await fetch(API_BASE + '/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: username, password: password })
+            });
+            var data = await response.json();
+            if (data.error) {
+              alert(data.error);
+              return;
+            }
+            setToken(data.token);
+            currentUser = data.user;
+            hideAuthModal();
+            updateAuthUI();
+            loadItems().then(function () { render(); });
+          } catch (err) {
+            alert('登录失败，请重试');
+          }
+        });
+      }
+
+      var registerForm = document.getElementById('register-form');
+      if (registerForm) {
+        registerForm.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          var username = document.getElementById('register-username').value.trim();
+          var password = document.getElementById('register-password').value;
+          if (!username || !password) return;
+          try {
+            var response = await fetch(API_BASE + '/auth/register', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: username, password: password })
+            });
+            var data = await response.json();
+            if (data.error) {
+              alert(data.error);
+              return;
+            }
+            setToken(data.token);
+            currentUser = data.user;
+            hideAuthModal();
+            updateAuthUI();
+            loadItems().then(function () { render(); });
+            if (data.user.role === 'admin') {
+              alert('欢迎！你是第一个注册的用户，已自动成为管理员');
+            }
+          } catch (err) {
+            alert('注册失败，请重试');
+          }
+        });
+      }
+    }
 
     if (searchInput) searchInput.addEventListener("input", render);
     if (filterCategory) filterCategory.addEventListener("change", render);
@@ -368,6 +577,7 @@
 
     if (importFile) {
       importFile.addEventListener("change", async function (e) {
+        if (!currentUser) { alert('请先登录'); return; }
         var file = e.target.files && e.target.files[0];
         if (!file) return;
         var reader = new FileReader();
@@ -394,6 +604,8 @@
 
     if (itemList) {
       itemList.addEventListener("click", async function (e) {
+        if (!currentUser) return;
+
         var snapBtn = e.target.closest("[data-snap]");
         var delBtn = e.target.closest("[data-del]");
         var editBtn = e.target.closest("[data-edit]");
@@ -593,6 +805,7 @@
   function buildItem(item) {
     var li = document.createElement("li");
     li.className = "item";
+    if (!currentUser) li.classList.add("item-readonly");
 
     var images = item.images || [];
 
@@ -663,8 +876,9 @@
     statusBadge.className = "status-badge status-" + item.status + " status-btn";
     statusBadge.setAttribute("data-id", item.id);
     statusBadge.type = "button";
-    statusBadge.title = "点击切换下一个状态";
+    statusBadge.title = currentUser ? "点击切换下一个状态" : "登录后可操作";
     statusBadge.textContent = item.status;
+    if (!currentUser) statusBadge.style.cursor = "default";
     meta.appendChild(statusBadge);
 
     var priceInfo = document.createElement("span");
@@ -692,34 +906,38 @@
       body.appendChild(note);
     }
 
-    var footer = document.createElement("div");
-    footer.className = "item-footer";
-
-    var snapBtn = document.createElement("button");
-    snapBtn.className = "btn-snap";
-    snapBtn.setAttribute("data-snap", item.id);
-    snapBtn.textContent = "📷";
-    snapBtn.type = "button";
-    snapBtn.title = "生成商品快照图片";
-    footer.appendChild(snapBtn);
-
-    var editBtn = document.createElement("button");
-    editBtn.className = "btn-edit";
-    editBtn.setAttribute("data-edit", item.id);
-    editBtn.textContent = "编辑";
-    editBtn.type = "button";
-    editBtn.title = "编辑此商品";
-    footer.appendChild(editBtn);
-
-    var del = document.createElement("button");
-    del.className = "btn-danger";
-    del.setAttribute("data-del", item.id);
-    del.textContent = "删除";
-    del.type = "button";
-    footer.appendChild(del);
-
     li.appendChild(body);
-    li.appendChild(footer);
+
+    if (currentUser) {
+      var footer = document.createElement("div");
+      footer.className = "item-footer";
+
+      var snapBtn = document.createElement("button");
+      snapBtn.className = "btn-snap";
+      snapBtn.setAttribute("data-snap", item.id);
+      snapBtn.textContent = "📷";
+      snapBtn.type = "button";
+      snapBtn.title = "生成商品快照图片";
+      footer.appendChild(snapBtn);
+
+      var editBtn = document.createElement("button");
+      editBtn.className = "btn-edit";
+      editBtn.setAttribute("data-edit", item.id);
+      editBtn.textContent = "编辑";
+      editBtn.type = "button";
+      editBtn.title = "编辑此商品";
+      footer.appendChild(editBtn);
+
+      var del = document.createElement("button");
+      del.className = "btn-danger";
+      del.setAttribute("data-del", item.id);
+      del.textContent = "删除";
+      del.type = "button";
+      footer.appendChild(del);
+
+      li.appendChild(footer);
+    }
+
     return li;
   }
 
