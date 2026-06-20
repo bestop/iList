@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#4f46e5" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>用户管理 - 采购清单</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="admin">
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a href="index.html" class="back-link">‹ 返回清单</a>
+        <h1>👥 用户管理</h1>
+        <p class="subtitle">管理系统用户及权限</p>
+      </div>
+      <div class="header-right">
+        <div id="user-info" class="user-info">
+          <span class="user-name"></span>
+          <span class="user-role"></span>
+          <a href="index.html" class="btn-logout">返回首页</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card admin-panel">
+      <div class="admin-header">
+        <h2>全部用户</h2>
+        <span class="chip" id="user-count-chip">共 0 人</span>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>用户名</th>
+              <th>角色</th>
+              <th>商品数</th>
+              <th>注册时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="user-list"></tbody>
+        </table>
+      </div>
+      <div id="admin-empty" class="admin-empty hidden">
+        <p>暂无用户数据</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <small>数据保存在云端数据库，支持多设备同步</small>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

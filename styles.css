@@ -1007,13 +1007,20 @@ button {
   margin-bottom: 20px;
 }
 
-.admin-panel h2 {
-  margin: 0 0 16px;
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.admin-header h2 {
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-light);
 }
 
 .admin-table-wrap {
@@ -1112,6 +1119,38 @@ button {
   font-style: italic;
 }
 
+.user-cell-date {
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.admin-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.btn-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  text-decoration: none;
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.btn-admin:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 @media (max-width: 768px) {
   .header-inner {
     flex-direction: column;
@@ -1126,6 +1165,25 @@ button {
   .user-info {
     font-size: 12px;
     gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .btn-admin {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .admin-table {
+    font-size: 13px;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 8px 6px;
+  }
+
+  .user-cell-date {
+    font-size: 11px;
   }
 
   .auth-modal {

@@ -81,7 +81,7 @@
     var userInfo = document.getElementById('user-info');
     var addBtn = document.getElementById('btn-add');
     var guestBanner = document.getElementById('guest-banner');
-    var adminPanel = document.getElementById('admin-panel');
+    var adminBtn = document.getElementById('btn-admin');
 
     if (currentUser) {
       if (loginBtn) loginBtn.classList.add('hidden');
@@ -94,12 +94,11 @@
       }
       if (addBtn) addBtn.classList.remove('hidden');
       if (guestBanner) guestBanner.classList.add('hidden');
-      if (adminPanel) {
+      if (adminBtn) {
         if (currentUser.role === 'admin') {
-          adminPanel.classList.remove('hidden');
-          loadUsers();
+          adminBtn.classList.remove('hidden');
         } else {
-          adminPanel.classList.add('hidden');
+          adminBtn.classList.add('hidden');
         }
       }
     } else {
@@ -107,7 +106,7 @@
       if (userInfo) userInfo.classList.add('hidden');
       if (addBtn) addBtn.classList.add('hidden');
       if (guestBanner) guestBanner.classList.remove('hidden');
-      if (adminPanel) adminPanel.classList.add('hidden');
+      if (adminBtn) adminBtn.classList.add('hidden');
     }
   }
 
@@ -128,13 +127,26 @@
     var userList = document.getElementById('user-list');
     if (!userList) return;
     userList.innerHTML = '';
+    var countChip = document.getElementById('user-count-chip');
+    if (countChip) countChip.textContent = '共 ' + users.length + ' 人';
+    var adminEmpty = document.getElementById('admin-empty');
+    if (adminEmpty) {
+      if (users.length === 0) adminEmpty.classList.remove('hidden');
+      else adminEmpty.classList.add('hidden');
+    }
     users.forEach(function (u) {
       var tr = document.createElement('tr');
       tr.className = 'user-row';
+      var dateStr = '';
+      if (u.created_at) {
+        var d = new Date(u.created_at);
+        dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }
       tr.innerHTML =
         '<td class="user-cell-name">' + escapeHtml(u.username) + '</td>' +
         '<td class="user-cell-role"><span class="role-badge role-' + u.role + '">' + (u.role === 'admin' ? '管理员' : '用户') + '</span></td>' +
         '<td class="user-cell-items">' + (u.item_count || 0) + ' 件</td>' +
+        '<td class="user-cell-date">' + dateStr + '</td>' +
         '<td class="user-cell-actions">' +
           (u.id !== currentUser.userId ?
             '<button class="btn-sm btn-toggle-role" data-id="' + u.id + '" data-role="' + u.role + '" type="button">' +
@@ -534,51 +546,6 @@
       });
     }
 
-    var userList = document.getElementById('user-list');
-    if (userList) {
-      userList.addEventListener('click', async function (e) {
-        var toggleBtn = e.target.closest('.btn-toggle-role');
-        var delBtn = e.target.closest('.btn-del-user');
-
-        if (toggleBtn) {
-          var userId = toggleBtn.getAttribute('data-id');
-          var currentRole = toggleBtn.getAttribute('data-role');
-          var newRole = currentRole === 'admin' ? 'user' : 'admin';
-          if (confirm('确定将此用户角色改为' + (newRole === 'admin' ? '管理员' : '普通用户') + '？')) {
-            try {
-              var response = await fetch(API_BASE + '/auth/users', {
-                method: 'PUT',
-                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-                body: JSON.stringify({ id: userId, role: newRole })
-              });
-              var data = await response.json();
-              if (data.error) { alert(data.error); return; }
-              loadUsers();
-            } catch (err) { alert('操作失败'); }
-          }
-          return;
-        }
-
-        if (delBtn) {
-          var delId = delBtn.getAttribute('data-id');
-          var delName = delBtn.getAttribute('data-name');
-          if (confirm('确定删除用户「' + delName + '」及其所有商品？此操作不可撤销！')) {
-            try {
-              var response2 = await fetch(API_BASE + '/auth/users', {
-                method: 'DELETE',
-                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-                body: JSON.stringify({ id: delId })
-              });
-              var data2 = await response2.json();
-              if (data2.error) { alert(data2.error); return; }
-              loadUsers();
-            } catch (err) { alert('操作失败'); }
-          }
-          return;
-        }
-      });
-    }
-
     var authModal = document.getElementById('auth-modal');
     if (authModal) {
       authModal.addEventListener('click', function (e) {
@@ -785,6 +752,70 @@
               target.status = newStatus;
               render();
             }
+          }
+          return;
+        }
+      });
+    }
+  }
+
+  if (page === "admin") {
+    checkAuth().then(function (user) {
+      if (!user || user.role !== 'admin') {
+        alert('需要管理员权限');
+        window.location.href = "index.html";
+        return;
+      }
+      var userInfo = document.getElementById('user-info');
+      if (userInfo) {
+        userInfo.classList.remove('hidden');
+        var nameEl = userInfo.querySelector('.user-name');
+        if (nameEl) nameEl.textContent = currentUser.username;
+        var roleEl = userInfo.querySelector('.user-role');
+        if (roleEl) roleEl.textContent = '管理员';
+      }
+      loadUsers();
+    });
+
+    var userList = document.getElementById('user-list');
+    if (userList) {
+      userList.addEventListener('click', async function (e) {
+        var toggleBtn = e.target.closest('.btn-toggle-role');
+        var delBtn = e.target.closest('.btn-del-user');
+
+        if (toggleBtn) {
+          var userId = toggleBtn.getAttribute('data-id');
+          var currentRole = toggleBtn.getAttribute('data-role');
+          var newRole = currentRole === 'admin' ? 'user' : 'admin';
+          if (confirm('确定将此用户角色改为' + (newRole === 'admin' ? '管理员' : '普通用户') + '？')) {
+            try {
+              var response = await fetch(API_BASE + '/auth/users', {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                body: JSON.stringify({ id: userId, role: newRole })
+              });
+              var data = await response.json();
+              if (data.error) { alert(data.error); return; }
+              loadUsers();
+            } catch (err) { alert('操作失败'); }
+          }
+          return;
+        }
+
+        if (delBtn) {
+          var delId = delBtn.getAttribute('data-id');
+          var delName = delBtn.getAttribute('data-name');
+          if (confirm('确定删除用户「' + delName + '」及其所有商品？此操作不可撤销！')) {
+            try {
+              var response2 = await fetch(API_BASE + '/auth/users', {
+                method: 'DELETE',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                body: JSON.stringify({ id: delId })
+              });
+              var data2 = await response2.json();
+              if (data2.error) { alert(data2.error); return; }
+              loadUsers();
+            } catch (err) { alert('操作失败'); }
           }
           return;
         }
