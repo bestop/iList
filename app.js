@@ -38,11 +38,11 @@
   var currentUser = null;
 
   var MOCK_ITEMS = [
-    { id: 'mock1', name: '无线蓝牙耳机', category: '数码', status: '待发货', price: 299, qty: 1, date: '2026-06-18', shop: '京东', note: '降噪款', images: [], createdAt: Date.now() },
-    { id: 'mock2', name: '机械键盘', category: '数码', status: '已发货', price: 459, qty: 1, date: '2026-06-17', shop: '淘宝', note: '红轴', images: [], createdAt: Date.now() - 1000 },
-    { id: 'mock3', name: '显示器支架', category: '家具', status: '已收货', price: 128, qty: 2, date: '2026-06-16', shop: '拼多多', note: '', images: [], createdAt: Date.now() - 2000 },
-    { id: 'mock4', name: 'USB-C 扩展坞', category: '数码', status: '已完成', price: 189, qty: 1, date: '2026-06-15', shop: '京东', note: '7合1', images: [], createdAt: Date.now() - 3000 },
-    { id: 'mock5', name: '台灯', category: '家具', status: '待发货', price: 79, qty: 1, date: '2026-06-14', shop: '', note: '护眼款', images: [], createdAt: Date.now() - 4000 }
+    { id: 'mock1', name: '无线蓝牙耳机', category: '数码', status: '待发货', price: 299, qty: 1, date: '2026-06-18', shop: '京东', note: '降噪款', images: ['https://picsum.photos/seed/earbuds1/600/400', 'https://picsum.photos/seed/earbuds2/600/400'], createdAt: Date.now() },
+    { id: 'mock2', name: '机械键盘', category: '数码', status: '已发货', price: 459, qty: 1, date: '2026-06-17', shop: '淘宝', note: '红轴', images: ['https://picsum.photos/seed/keyboard1/600/400', 'https://picsum.photos/seed/keyboard2/600/400', 'https://picsum.photos/seed/keyboard3/600/400'], createdAt: Date.now() - 1000 },
+    { id: 'mock3', name: '显示器支架', category: '家具', status: '已收货', price: 128, qty: 2, date: '2026-06-16', shop: '拼多多', note: '', images: ['https://picsum.photos/seed/stand1/600/400'], createdAt: Date.now() - 2000 },
+    { id: 'mock4', name: 'USB-C 扩展坞', category: '数码', status: '已完成', price: 189, qty: 1, date: '2026-06-15', shop: '京东', note: '7合1', images: ['https://picsum.photos/seed/hub1/600/400', 'https://picsum.photos/seed/hub2/600/400'], createdAt: Date.now() - 3000 },
+    { id: 'mock5', name: '台灯', category: '家具', status: '待发货', price: 79, qty: 1, date: '2026-06-14', shop: '', note: '护眼款', images: ['https://picsum.photos/seed/lamp1/600/400'], createdAt: Date.now() - 4000 }
   ];
 
   function getToken() {
@@ -701,15 +701,41 @@
 
     if (itemList) {
       itemList.addEventListener("click", async function (e) {
+        var galleryPrev = e.target.closest(".item-gallery-prev");
+        var galleryNext = e.target.closest(".item-gallery-next");
+        var galleryImg = e.target.closest(".item-gallery-img");
+
+        if (galleryPrev || galleryNext) {
+          var li = e.target.closest("li.item");
+          var gIdx = parseInt(li.getAttribute("data-gallery-idx") || "0", 10);
+          var images = JSON.parse(li.getAttribute("data-images") || "[]");
+          var total = images.length;
+          if (!total) return;
+          var newIdx = gIdx + (galleryPrev ? -1 : 1);
+          if (newIdx < 0) newIdx = total - 1;
+          if (newIdx >= total) newIdx = 0;
+          li.setAttribute("data-gallery-idx", newIdx);
+          var imgEl = li.querySelector(".item-gallery-img");
+          if (imgEl) imgEl.src = images[newIdx];
+          var cntEl = li.querySelector(".item-gallery-counter");
+          if (cntEl) cntEl.textContent = (newIdx + 1) + "/" + total;
+          return;
+        }
+
+        if (galleryImg) {
+          var li2 = e.target.closest("li.item");
+          var gIdx2 = parseInt(li2.getAttribute("data-gallery-idx") || "0", 10);
+          var images2 = JSON.parse(li2.getAttribute("data-images") || "[]");
+          openModal(images2, gIdx2);
+          return;
+        }
+
         if (!currentUser) return;
 
         var snapBtn = e.target.closest("[data-snap]");
         var delBtn = e.target.closest("[data-del]");
         var editBtn = e.target.closest("[data-edit]");
         var statusBtn = e.target.closest(".status-btn");
-        var galleryPrev = e.target.closest(".item-gallery-prev");
-        var galleryNext = e.target.closest(".item-gallery-next");
-        var galleryImg = e.target.closest(".item-gallery-img");
 
         if (snapBtn) {
           var snapId = snapBtn.getAttribute("data-snap");
@@ -761,30 +787,6 @@
             }
           }
           return;
-        }
-
-        if (galleryPrev || galleryNext) {
-          var li = e.target.closest("li.item");
-          var gIdx = parseInt(li.getAttribute("data-gallery-idx") || "0", 10);
-          var images = JSON.parse(li.getAttribute("data-images") || "[]");
-          var total = images.length;
-          if (!total) return;
-          var newIdx = gIdx + (galleryPrev ? -1 : 1);
-          if (newIdx < 0) newIdx = total - 1;
-          if (newIdx >= total) newIdx = 0;
-          li.setAttribute("data-gallery-idx", newIdx);
-          var imgEl = li.querySelector(".item-gallery-img");
-          if (imgEl) imgEl.src = images[newIdx];
-          var cntEl = li.querySelector(".item-gallery-counter");
-          if (cntEl) cntEl.textContent = (newIdx + 1) + "/" + total;
-          return;
-        }
-
-        if (galleryImg) {
-          var li2 = e.target.closest("li.item");
-          var gIdx2 = parseInt(li2.getAttribute("data-gallery-idx") || "0", 10);
-          var images2 = JSON.parse(li2.getAttribute("data-images") || "[]");
-          openModal(images2, gIdx2);
         }
       });
     }

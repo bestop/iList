@@ -900,11 +900,11 @@ button {
 }
 
 .item-readonly .item-gallery-img {
-  cursor: default;
+  cursor: zoom-in;
 }
 
 .item-readonly .item-image img {
-  cursor: default;
+  cursor: zoom-in;
 }
 
 .item-readonly .item-image:hover img {
