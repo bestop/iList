@@ -733,31 +733,40 @@
 
   async function generateSnapshot(item) {
     var images = (item.images || []).slice();
-    var canvasW = 800;
+    var scale = 2;
+    var baseW = 800;
     var pad = 40;
     var gap = 16;
     var nameH = 50;
 
+    var canvasW = baseW * scale;
+    var padS = pad * scale;
+    var gapS = gap * scale;
+    var nameHS = nameH * scale;
+
     var cols, imgMaxW, imgMaxH;
     if (images.length <= 1) {
       cols = 1;
-      imgMaxW = canvasW - pad * 2;
+      imgMaxW = baseW - pad * 2;
       imgMaxH = 600;
     } else if (images.length <= 2) {
       cols = 2;
-      imgMaxW = (canvasW - pad * 2 - gap) / 2;
+      imgMaxW = (baseW - pad * 2 - gap) / 2;
       imgMaxH = 400;
     } else {
       cols = 3;
-      imgMaxW = (canvasW - pad * 2 - gap * 2) / 3;
+      imgMaxW = (baseW - pad * 2 - gap * 2) / 3;
       imgMaxH = 300;
     }
+
+    var imgMaxWS = imgMaxW * scale;
+    var imgMaxHS = imgMaxH * scale;
 
     var loadedImgs = [];
     for (var i = 0; i < images.length; i++) {
       try {
         var img = await loadImage(images[i]);
-        var s = fitSize(img.naturalWidth || img.width, img.naturalHeight || img.height, imgMaxW, imgMaxH);
+        var s = fitSize(img.naturalWidth || img.width, img.naturalHeight || img.height, imgMaxWS, imgMaxHS);
         loadedImgs.push({ el: img, w: s.w, h: s.h });
       } catch (e) { }
     }
@@ -773,16 +782,19 @@
       rowHeights.push(rh);
     }
 
-    var imagesH = rowHeights.reduce(function (s, h) { return s + h; }, 0) + (rows > 0 ? (rows - 1) * gap : 0);
-    var canvasH = pad + nameH + (imagesH > 0 ? gap + imagesH : 0) + pad;
+    var imagesH = rowHeights.reduce(function (s, h) { return s + h; }, 0) + (rows > 0 ? (rows - 1) * gapS : 0);
+    var canvasH = padS + nameHS + (imagesH > 0 ? gapS + imagesH : 0) + padS;
 
     var canvas = document.createElement("canvas");
     canvas.width = canvasW;
     canvas.height = canvasH;
     var ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvasW, canvasH);
+    ctx.fillRect(0, 0, baseW, canvasH / scale);
 
     ctx.fillStyle = "#1a1a2e";
     ctx.font = "bold 32px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -796,12 +808,12 @@
         var idx2 = r * cols + c;
         if (idx2 >= loadedImgs.length) break;
         var di = loadedImgs[idx2];
-        var dx = xOff + (imgMaxW - di.w) / 2;
-        var dy = imgY + (rowHeights[r] - di.h) / 2;
-        ctx.drawImage(di.el, dx, dy, di.w, di.h);
+        var dx = xOff + (imgMaxW - di.w / scale) / 2;
+        var dy = imgY + (rowHeights[r] / scale - di.h / scale) / 2;
+        ctx.drawImage(di.el, dx, dy, di.w / scale, di.h / scale);
         xOff += imgMaxW + gap;
       }
-      imgY += rowHeights[r] + gap;
+      imgY += rowHeights[r] / scale + gap;
     }
 
     var dataUrl = canvas.toDataURL("image/png");
