@@ -1,12 +1,6 @@
-import { sql, initializeDatabase } from '../_db.js';
+import { sql } from '../_db.js';
 
 export default async function handler(req, res) {
-  try {
-    await initializeDatabase();
-  } catch (e) {
-    console.error('Failed to initialize database:', e);
-  }
-
   const { id } = req.query;
 
   if (req.method === 'PUT') {

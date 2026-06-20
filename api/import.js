@@ -1,12 +1,6 @@
-import { sql, initializeDatabase } from './_db.js';
+import { sql } from './_db.js';
 
 export default async function handler(req, res) {
-  try {
-    await initializeDatabase();
-  } catch (e) {
-    console.error('Failed to initialize database:', e);
-  }
-
   if (req.method === 'POST') {
     try {
       const importedItems = req.body;
