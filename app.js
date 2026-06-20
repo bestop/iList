@@ -927,8 +927,7 @@
     }
 
     var total = items.reduce(function (s, i) { return s + (i.price || 0) * (i.qty || 0); }, 0);
-    var totalQty = items.reduce(function (s, i) { return s + (i.qty || 0); }, 0);
-    if (countChip) countChip.textContent = "共 " + totalQty + " 件";
+    if (countChip) countChip.textContent = "共 " + items.length + " 件";
     if (totalChip) totalChip.textContent = "总计 ¥" + total.toFixed(2);
   }
 
