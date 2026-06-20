@@ -30,10 +30,12 @@
   --font-sans: "Inter", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --transition-fast: 0.15s ease;
   --transition-normal: 0.2s ease;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
@@ -46,6 +48,7 @@ html, body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
 }
 
 .container {
@@ -58,6 +61,9 @@ html, body {
   background: var(--surface);
   border-bottom: 1px solid var(--border-light);
   padding: 24px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header-inner {
@@ -103,6 +109,7 @@ html, body {
   font-weight: 600;
   font-size: 14px;
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
 .btn-add:hover {
@@ -196,7 +203,7 @@ textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   color: var(--text-primary);
   transition: all var(--transition-fast);
@@ -264,9 +271,9 @@ textarea {
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -279,6 +286,12 @@ textarea {
 
 .img-thumb-wrap:hover .img-thumb-del {
   opacity: 1;
+}
+
+@media (hover: none) {
+  .img-thumb-del {
+    opacity: 1;
+  }
 }
 
 .img-thumb-del:hover {
@@ -456,7 +469,7 @@ button {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
 
@@ -468,7 +481,6 @@ button {
   display: flex;
   flex-direction: column;
   transition: all var(--transition-normal);
-  cursor: pointer;
 }
 
 .item:hover {
@@ -478,12 +490,11 @@ button {
 
 .item-image {
   width: 100%;
-  height: 160px;
+  height: 180px;
   background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: zoom-in;
   overflow: hidden;
 }
 
@@ -506,7 +517,7 @@ button {
 
 .item-gallery {
   width: 100%;
-  height: 160px;
+  height: 180px;
   position: relative;
   overflow: hidden;
   background: var(--bg-secondary);
@@ -533,9 +544,9 @@ button {
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  font-size: 14px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -547,6 +558,12 @@ button {
 
 .item-gallery:hover .item-gallery-nav {
   opacity: 1;
+}
+
+@media (hover: none) {
+  .item-gallery-nav {
+    opacity: 0.7;
+  }
 }
 
 .item-gallery-nav:hover {
@@ -592,6 +609,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
 }
 
 .tag {
@@ -645,6 +663,7 @@ button {
   color: var(--text-primary);
   font-weight: 700;
   font-size: 16px;
+  white-space: nowrap;
 }
 
 .item-note {
@@ -654,6 +673,7 @@ button {
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   margin-top: 2px;
+  word-break: break-word;
 }
 
 .item-footer {
@@ -661,6 +681,7 @@ button {
   display: flex;
   justify-content: flex-end;
   border-top: 1px solid var(--border-light);
+  gap: 4px;
 }
 
 .empty-state {
@@ -689,6 +710,7 @@ button {
 .site-footer {
   text-align: center;
   padding: 20px 0;
+  padding-bottom: calc(20px + var(--safe-bottom));
   color: var(--text-muted);
   font-size: 12px;
 }
@@ -752,9 +774,9 @@ button {
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
   line-height: 1;
   padding: 0;
   cursor: pointer;
@@ -814,7 +836,7 @@ button {
   }
 
   .site-header {
-    padding: 20px 0;
+    padding: 16px 0;
   }
 
   .header-left h1 {
@@ -827,7 +849,8 @@ button {
   }
 
   main.container {
-    margin-top: 20px;
+    margin-top: 16px;
+    margin-bottom: 24px;
   }
 
   .card {
@@ -835,17 +858,18 @@ button {
   }
 
   .item-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 12px;
   }
 
   .item-image, .item-gallery {
-    height: 180px;
+    height: 140px;
   }
 
   .toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
   }
 
   .toolbar #search {
@@ -865,6 +889,40 @@ button {
   .row.two-col {
     flex-direction: column;
   }
+
+  .item-body {
+    padding: 10px 12px;
+  }
+
+  .item-title {
+    font-size: 14px;
+  }
+
+  .item-price {
+    font-size: 14px;
+  }
+
+  .item-footer {
+    padding: 8px 12px;
+    gap: 2px;
+  }
+
+  .btn-snap, .btn-edit, .btn-danger {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .modal-prev, .modal-next {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -877,11 +935,27 @@ button {
     margin-top: 6px;
   }
 
-  .item-body {
-    padding: 12px;
+  .item-list {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
-  .item-title {
-    font-size: 14px;
+  .item-image, .item-gallery {
+    height: 120px;
+  }
+
+  .item-meta {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .tag, .status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .item-note {
+    font-size: 11px;
+    padding: 6px 8px;
   }
 }

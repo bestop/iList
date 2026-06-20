@@ -43,6 +43,22 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
+  function normalizeItem(item) {
+    return {
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      status: item.status,
+      price: parseFloat(item.price) || 0,
+      qty: parseInt(item.qty, 10) || 1,
+      date: item.date ? String(item.date).slice(0, 10) : '',
+      shop: item.shop || '',
+      note: item.note || '',
+      images: Array.isArray(item.images) ? item.images : [],
+      createdAt: item.created_at || item.createdAt || Date.now()
+    };
+  }
+
   function localLoad() {
     try {
       var data = localStorage.getItem(STORAGE_KEY);
@@ -66,21 +82,7 @@
       var response = await fetch(API_BASE + '/items');
       if (!response.ok) throw new Error('API not available');
       var data = await response.json();
-      items = data.map(function (item) {
-        return {
-          id: item.id,
-          name: item.name,
-          category: item.category,
-          status: item.status,
-          price: parseFloat(item.price) || 0,
-          qty: parseInt(item.qty, 10) || 1,
-          date: item.date ? item.date.slice(0, 10) : '',
-          shop: item.shop || '',
-          note: item.note || '',
-          images: Array.isArray(item.images) ? item.images : [],
-          createdAt: item.created_at || item.createdAt || Date.now()
-        };
-      });
+      items = data.map(normalizeItem);
       useApi = true;
       return items;
     } catch (error) {
@@ -99,7 +101,7 @@
           body: JSON.stringify(item)
         });
         if (!response.ok) throw new Error('Failed to save item');
-        return await response.json();
+        return normalizeItem(await response.json());
       } catch (error) {
         console.error('API save error:', error);
         return null;
@@ -141,7 +143,7 @@
           body: JSON.stringify(data)
         });
         if (!response.ok) throw new Error('Failed to update item');
-        return await response.json();
+        return normalizeItem(await response.json());
       } catch (error) {
         console.error('API update error:', error);
         return null;
@@ -191,34 +193,34 @@
   }
 
   async function loadItemForEdit(id) {
-    var allItems;
+    var target;
     if (useApi) {
       try {
         var response = await fetch(API_BASE + '/items');
         if (!response.ok) throw new Error('Failed to load items');
-        allItems = await response.json();
+        var allItems = await response.json();
+        target = allItems.find(function (i) { return i.id === id; });
+        if (target) target = normalizeItem(target);
       } catch (error) {
         console.error('Error loading item:', error);
         alert('加载商品失败，请重试');
         return;
       }
     } else {
-      allItems = items;
+      target = items.find(function (i) { return i.id === id; });
     }
 
-    var item = allItems.find(function (i) { return i.id === id; });
+    if (target) {
+      document.getElementById("name").value = target.name || "";
+      document.getElementById("category").value = target.category || "其他";
+      document.getElementById("status").value = target.status || "待发货";
+      document.getElementById("price").value = target.price || "";
+      document.getElementById("qty").value = target.qty || 1;
+      document.getElementById("date").value = target.date || todayStr();
+      document.getElementById("shop").value = target.shop || "";
+      document.getElementById("note").value = target.note || "";
 
-    if (item) {
-      document.getElementById("name").value = item.name || "";
-      document.getElementById("category").value = item.category || "其他";
-      document.getElementById("status").value = item.status || "待发货";
-      document.getElementById("price").value = item.price || "";
-      document.getElementById("qty").value = item.qty || 1;
-      document.getElementById("date").value = item.date || todayStr();
-      document.getElementById("shop").value = item.shop || "";
-      document.getElementById("note").value = item.note || "";
-
-      draftImages = (item.images || []).slice();
+      draftImages = (target.images || []).slice();
       renderDraftImages();
 
       document.querySelector('.header-left h1').textContent = "编辑商品";
@@ -404,22 +406,22 @@
           var snapId = snapBtn.getAttribute("data-snap");
           var snapItem = items.find(function (i) { return i.id === snapId; });
           if (snapItem) {
-            snapBtn.textContent = "⏳ 生成中...";
+            snapBtn.textContent = "⏳";
             snapBtn.disabled = true;
             try {
               await generateSnapshot(snapItem);
             } catch (err) {
               alert('生成快照失败：' + err.message);
             }
-            snapBtn.textContent = "📷 快照";
+            snapBtn.textContent = "📷";
             snapBtn.disabled = false;
           }
           return;
         }
 
         if (editBtn) {
-          var editId = editBtn.getAttribute("data-edit");
-          window.location.href = "add.html?id=" + editId;
+          var editId2 = editBtn.getAttribute("data-edit");
+          window.location.href = "add.html?id=" + editId2;
           return;
         }
 
@@ -440,8 +442,8 @@
           var target = items.find(function (i) { return i.id === statusId; });
           if (target) {
             var order = ["待发货", "已发货", "已收货", "已完成"];
-            var idx = order.indexOf(target.status);
-            var newStatus = order[(idx + 1) % order.length];
+            var idx3 = order.indexOf(target.status);
+            var newStatus = order[(idx3 + 1) % order.length];
 
             var updatedItem = await updateItem(statusId, { status: newStatus });
             if (updatedItem) {
@@ -593,7 +595,6 @@
     li.className = "item";
 
     var images = item.images || [];
-    var imagesJson = JSON.stringify(images);
 
     if (images.length === 0) {
       var imgBox = document.createElement("div");
@@ -610,6 +611,7 @@
       var galleryImg = document.createElement("img");
       galleryImg.className = "item-gallery-img";
       galleryImg.src = images[0];
+      galleryImg.loading = "lazy";
       gallery.appendChild(galleryImg);
 
       if (images.length > 1) {
@@ -631,7 +633,7 @@
         gallery.appendChild(counter);
       }
 
-      li.setAttribute("data-images", imagesJson);
+      li.setAttribute("data-images", JSON.stringify(images));
       li.setAttribute("data-gallery-idx", "0");
       li.appendChild(gallery);
     }
@@ -696,7 +698,7 @@
     var snapBtn = document.createElement("button");
     snapBtn.className = "btn-snap";
     snapBtn.setAttribute("data-snap", item.id);
-    snapBtn.textContent = "📷 快照";
+    snapBtn.textContent = "📷";
     snapBtn.type = "button";
     snapBtn.title = "生成商品快照图片";
     footer.appendChild(snapBtn);
@@ -736,26 +738,30 @@
     var gap = 16;
     var nameH = 50;
 
-    var imgSlots;
+    var cols, imgMaxW, imgMaxH;
     if (images.length <= 1) {
-      imgSlots = [{ cols: 1, maxW: canvasW - pad * 2, maxH: 600 }];
+      cols = 1;
+      imgMaxW = canvasW - pad * 2;
+      imgMaxH = 600;
     } else if (images.length <= 2) {
-      imgSlots = [{ cols: 2, maxW: (canvasW - pad * 2 - gap) / 2, maxH: 400 }];
+      cols = 2;
+      imgMaxW = (canvasW - pad * 2 - gap) / 2;
+      imgMaxH = 400;
     } else {
-      imgSlots = [{ cols: 3, maxW: (canvasW - pad * 2 - gap * 2) / 3, maxH: 300 }];
+      cols = 3;
+      imgMaxW = (canvasW - pad * 2 - gap * 2) / 3;
+      imgMaxH = 300;
     }
 
     var loadedImgs = [];
     for (var i = 0; i < images.length; i++) {
       try {
         var img = await loadImage(images[i]);
-        var slot = imgSlots[0];
-        var s = fitSize(img.naturalWidth || img.width, img.naturalHeight || img.height, slot.maxW, slot.maxH);
+        var s = fitSize(img.naturalWidth || img.width, img.naturalHeight || img.height, imgMaxW, imgMaxH);
         loadedImgs.push({ el: img, w: s.w, h: s.h });
       } catch (e) { }
     }
 
-    var cols = imgSlots[0].cols;
     var rows = Math.ceil(loadedImgs.length / cols);
     var rowHeights = [];
     for (var r = 0; r < rows; r++) {
@@ -767,8 +773,8 @@
       rowHeights.push(rh);
     }
 
-    var imagesH = rowHeights.reduce(function (s, h) { return s + h; }, 0) + (rows - 1) * gap;
-    var canvasH = pad + nameH + gap + imagesH + pad;
+    var imagesH = rowHeights.reduce(function (s, h) { return s + h; }, 0) + (rows > 0 ? (rows - 1) * gap : 0);
+    var canvasH = pad + nameH + (imagesH > 0 ? gap + imagesH : 0) + pad;
 
     var canvas = document.createElement("canvas");
     canvas.width = canvasW;
@@ -790,10 +796,10 @@
         var idx2 = r * cols + c;
         if (idx2 >= loadedImgs.length) break;
         var di = loadedImgs[idx2];
-        var dx = xOff + (imgSlots[0].maxW - di.w) / 2;
+        var dx = xOff + (imgMaxW - di.w) / 2;
         var dy = imgY + (rowHeights[r] - di.h) / 2;
         ctx.drawImage(di.el, dx, dy, di.w, di.h);
-        xOff += imgSlots[0].maxW + gap;
+        xOff += imgMaxW + gap;
       }
       imgY += rowHeights[r] + gap;
     }
@@ -808,7 +814,7 @@
   function loadImage(src) {
     return new Promise(function (resolve, reject) {
       var img = new Image();
-      img.crossOrigin = "anonymous";
+      if (!src.startsWith('data:')) img.crossOrigin = "anonymous";
       img.onload = function () { resolve(img); };
       img.onerror = reject;
       img.src = src;

@@ -5,20 +5,25 @@ export default async function handler(req, res) {
 
   if (req.method === 'PUT') {
     try {
-      const { name, category, status, price, qty, date, shop, note, images } = req.body;
+      const body = req.body;
+
+      const sets = [];
+      if (body.name != null && body.name !== '') sets.push(sql`name = ${body.name}`);
+      if (body.category != null && body.category !== '') sets.push(sql`category = ${body.category}`);
+      if (body.status != null && body.status !== '') sets.push(sql`status = ${body.status}`);
+      if (body.price != null) sets.push(sql`price = ${body.price}`);
+      if (body.qty != null) sets.push(sql`qty = ${body.qty}`);
+      if (body.date != null) sets.push(sql`date = ${body.date}`);
+      if (body.shop != null) sets.push(sql`shop = ${body.shop}`);
+      if (body.note != null) sets.push(sql`note = ${body.note}`);
+      if (body.images != null) sets.push(sql`images = ${JSON.stringify(body.images)}`);
+
+      if (sets.length === 0) {
+        return res.status(400).json({ error: 'No fields to update' });
+      }
 
       const result = await sql`
-        UPDATE items
-        SET
-          name = COALESCE(${name}, name),
-          category = COALESCE(${category}, category),
-          status = COALESCE(${status}, status),
-          price = COALESCE(${price}, price),
-          qty = COALESCE(${qty}, qty),
-          date = COALESCE(${date}, date),
-          shop = COALESCE(${shop}, shop),
-          note = COALESCE(${note}, note),
-          images = COALESCE(${JSON.stringify(images)}, images)
+        UPDATE items SET ${sql.join(sets, sql`, `)}
         WHERE id = ${id}
         RETURNING *
       `;
