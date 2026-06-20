@@ -392,12 +392,30 @@
 
     if (itemList) {
       itemList.addEventListener("click", async function (e) {
+        var snapBtn = e.target.closest("[data-snap]");
         var delBtn = e.target.closest("[data-del]");
         var editBtn = e.target.closest("[data-edit]");
         var statusBtn = e.target.closest(".status-btn");
         var galleryPrev = e.target.closest(".item-gallery-prev");
         var galleryNext = e.target.closest(".item-gallery-next");
         var galleryImg = e.target.closest(".item-gallery-img");
+
+        if (snapBtn) {
+          var snapId = snapBtn.getAttribute("data-snap");
+          var snapItem = items.find(function (i) { return i.id === snapId; });
+          if (snapItem) {
+            snapBtn.textContent = "⏳ 生成中...";
+            snapBtn.disabled = true;
+            try {
+              await generateSnapshot(snapItem);
+            } catch (err) {
+              alert('生成快照失败：' + err.message);
+            }
+            snapBtn.textContent = "📷 快照";
+            snapBtn.disabled = false;
+          }
+          return;
+        }
 
         if (editBtn) {
           var editId = editBtn.getAttribute("data-edit");
@@ -675,6 +693,14 @@
     var footer = document.createElement("div");
     footer.className = "item-footer";
 
+    var snapBtn = document.createElement("button");
+    snapBtn.className = "btn-snap";
+    snapBtn.setAttribute("data-snap", item.id);
+    snapBtn.textContent = "📷 快照";
+    snapBtn.type = "button";
+    snapBtn.title = "生成商品快照图片";
+    footer.appendChild(snapBtn);
+
     var editBtn = document.createElement("button");
     editBtn.className = "btn-edit";
     editBtn.setAttribute("data-edit", item.id);
@@ -701,6 +727,126 @@
     var m = String(d.getMonth() + 1).padStart(2, "0");
     var day = String(d.getDate()).padStart(2, "0");
     return y + "-" + m + "-" + day;
+  }
+
+  async function generateSnapshot(item) {
+    var images = (item.images || []).slice();
+    var canvasW = 800;
+    var pad = 30;
+    var titleH = 60;
+    var gap = 12;
+    var imgMaxW = (canvasW - pad * 2 - gap * 2) / 3;
+    var imgMaxH = imgMaxW;
+
+    var loadedImgs = [];
+    for (var i = 0; i < images.length; i++) {
+      try {
+        var img = await loadImage(images[i]);
+        var s = fitSize(img.naturalWidth || img.width, img.naturalHeight || img.height, imgMaxW, imgMaxH);
+        loadedImgs.push({ el: img, w: s.w, h: s.h });
+      } catch (e) { }
+    }
+
+    var cols = Math.min(loadedImgs.length, 3);
+    var rows = Math.ceil(loadedImgs.length / 3);
+    var maxRowH = 0;
+    for (var r = 0; r < rows; r++) {
+      var rowH = 0;
+      for (var c = 0; c < cols; c++) {
+        var idx = r * 3 + c;
+        if (idx < loadedImgs.length && loadedImgs[idx].h > rowH) rowH = loadedImgs[idx].h;
+      }
+      if (rowH > maxRowH) maxRowH = rowH;
+    }
+
+    var imagesH = loadedImgs.length > 0 ? rows * maxRowH + (rows - 1) * gap : 0;
+    var canvasH = pad + titleH + gap + imagesH + pad;
+
+    var canvas = document.createElement("canvas");
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    var ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    ctx.fillStyle = "#1a1a2e";
+    ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(item.name, pad, pad + titleH / 2);
+
+    var infoParts = [];
+    if (item.category) infoParts.push(item.category);
+    if (item.price) infoParts.push("¥" + item.price.toFixed(2) + " × " + item.qty);
+    if (item.shop) infoParts.push(item.shop);
+    if (item.date) infoParts.push(item.date);
+    if (infoParts.length) {
+      ctx.fillStyle = "#888";
+      ctx.font = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillText(infoParts.join("  |  "), pad, pad + titleH / 2 + 28);
+    }
+
+    if (item.note) {
+      ctx.fillStyle = "#666";
+      ctx.font = "15px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      var noteY = pad + titleH / 2 + 52;
+      ctx.fillText(item.note, pad, noteY);
+      canvasH = noteY + 20 + imagesH + pad;
+      canvas.height = canvasH;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvasW, canvasH);
+      ctx.fillStyle = "#1a1a2e";
+      ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.fillText(item.name, pad, pad + titleH / 2);
+      ctx.fillStyle = "#888";
+      ctx.font = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillText(infoParts.join("  |  "), pad, pad + titleH / 2 + 28);
+      ctx.fillStyle = "#666";
+      ctx.font = "15px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillText(item.note, pad, noteY);
+    }
+
+    var contentTop = item.note ? pad + titleH + 50 + gap : pad + titleH + gap;
+
+    for (var r = 0; r < rows; r++) {
+      var rowH2 = 0;
+      for (var c = 0; c < cols; c++) {
+        var idx2 = r * 3 + c;
+        if (idx2 < loadedImgs.length && loadedImgs[idx2].h > rowH2) rowH2 = loadedImgs[idx2].h;
+      }
+      var xOff = pad;
+      for (var c2 = 0; c2 < cols; c2++) {
+        var idx3 = r * 3 + c2;
+        if (idx3 >= loadedImgs.length) break;
+        var di = loadedImgs[idx3];
+        var dx = xOff + (imgMaxW - di.w) / 2;
+        var dy = contentTop + r * (maxRowH + gap) + (rowH2 - di.h) / 2;
+        ctx.drawImage(di.el, dx, dy, di.w, di.h);
+        xOff += imgMaxW + gap;
+      }
+    }
+
+    var dataUrl = canvas.toDataURL("image/png");
+    var a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = (item.name || "快照") + "-快照.png";
+    a.click();
+  }
+
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function () { resolve(img); };
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function fitSize(w, h, maxW, maxH) {
+    var ratio = Math.min(maxW / Math.max(w, 1), maxH / Math.max(h, 1), 1);
+    return { w: Math.round(w * ratio), h: Math.round(h * ratio) };
   }
 
   function compressImage(dataUrl, maxEdge, quality, callback) {

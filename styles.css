@@ -361,6 +361,24 @@ button {
   background: var(--accent-light);
 }
 
+.btn-snap {
+  background: transparent;
+  color: #6b7280;
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-right: auto;
+}
+
+.btn-snap:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-snap:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .list-header {
   display: flex;
   align-items: center;
