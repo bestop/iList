@@ -1,4 +1,4 @@
-import { sql, initializeDatabase } from '../db';
+import { sql, initializeDatabase } from '../_db.js';
 
 export default async function handler(req, res) {
   try {
