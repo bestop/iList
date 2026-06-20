@@ -65,7 +65,22 @@
     try {
       var response = await fetch(API_BASE + '/items');
       if (!response.ok) throw new Error('API not available');
-      items = await response.json();
+      var data = await response.json();
+      items = data.map(function (item) {
+        return {
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          status: item.status,
+          price: parseFloat(item.price) || 0,
+          qty: parseInt(item.qty, 10) || 1,
+          date: item.date ? item.date.slice(0, 10) : '',
+          shop: item.shop || '',
+          note: item.note || '',
+          images: Array.isArray(item.images) ? item.images : [],
+          createdAt: item.created_at || item.createdAt || Date.now()
+        };
+      });
       useApi = true;
       return items;
     } catch (error) {
