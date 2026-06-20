@@ -313,11 +313,15 @@
           var updatedItem = await updateItem(editId, item);
           if (updatedItem) {
             window.location.href = "index.html";
+          } else {
+            alert('保存失败，请重试');
           }
         } else {
           var savedItem = await saveItem(item);
           if (savedItem) {
             window.location.href = "index.html";
+          } else {
+            alert('添加失败，请重试');
           }
         }
       });
