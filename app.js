@@ -732,35 +732,43 @@
   async function generateSnapshot(item) {
     var images = (item.images || []).slice();
     var canvasW = 800;
-    var pad = 30;
-    var titleH = 60;
-    var gap = 12;
-    var imgMaxW = (canvasW - pad * 2 - gap * 2) / 3;
-    var imgMaxH = imgMaxW;
+    var pad = 40;
+    var gap = 16;
+    var nameH = 50;
+
+    var imgSlots;
+    if (images.length <= 1) {
+      imgSlots = [{ cols: 1, maxW: canvasW - pad * 2, maxH: 600 }];
+    } else if (images.length <= 2) {
+      imgSlots = [{ cols: 2, maxW: (canvasW - pad * 2 - gap) / 2, maxH: 400 }];
+    } else {
+      imgSlots = [{ cols: 3, maxW: (canvasW - pad * 2 - gap * 2) / 3, maxH: 300 }];
+    }
 
     var loadedImgs = [];
     for (var i = 0; i < images.length; i++) {
       try {
         var img = await loadImage(images[i]);
-        var s = fitSize(img.naturalWidth || img.width, img.naturalHeight || img.height, imgMaxW, imgMaxH);
+        var slot = imgSlots[0];
+        var s = fitSize(img.naturalWidth || img.width, img.naturalHeight || img.height, slot.maxW, slot.maxH);
         loadedImgs.push({ el: img, w: s.w, h: s.h });
       } catch (e) { }
     }
 
-    var cols = Math.min(loadedImgs.length, 3);
-    var rows = Math.ceil(loadedImgs.length / 3);
-    var maxRowH = 0;
+    var cols = imgSlots[0].cols;
+    var rows = Math.ceil(loadedImgs.length / cols);
+    var rowHeights = [];
     for (var r = 0; r < rows; r++) {
-      var rowH = 0;
+      var rh = 0;
       for (var c = 0; c < cols; c++) {
-        var idx = r * 3 + c;
-        if (idx < loadedImgs.length && loadedImgs[idx].h > rowH) rowH = loadedImgs[idx].h;
+        var idx = r * cols + c;
+        if (idx < loadedImgs.length && loadedImgs[idx].h > rh) rh = loadedImgs[idx].h;
       }
-      if (rowH > maxRowH) maxRowH = rowH;
+      rowHeights.push(rh);
     }
 
-    var imagesH = loadedImgs.length > 0 ? rows * maxRowH + (rows - 1) * gap : 0;
-    var canvasH = pad + titleH + gap + imagesH + pad;
+    var imagesH = rowHeights.reduce(function (s, h) { return s + h; }, 0) + (rows - 1) * gap;
+    var canvasH = pad + nameH + gap + imagesH + pad;
 
     var canvas = document.createElement("canvas");
     canvas.width = canvasW;
@@ -771,60 +779,23 @@
     ctx.fillRect(0, 0, canvasW, canvasH);
 
     ctx.fillStyle = "#1a1a2e";
-    ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.fillText(item.name, pad, pad + titleH / 2);
+    ctx.font = "bold 32px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textBaseline = "top";
+    ctx.fillText(item.name, pad, pad);
 
-    var infoParts = [];
-    if (item.category) infoParts.push(item.category);
-    if (item.price) infoParts.push("¥" + item.price.toFixed(2) + " × " + item.qty);
-    if (item.shop) infoParts.push(item.shop);
-    if (item.date) infoParts.push(item.date);
-    if (infoParts.length) {
-      ctx.fillStyle = "#888";
-      ctx.font = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      ctx.fillText(infoParts.join("  |  "), pad, pad + titleH / 2 + 28);
-    }
-
-    if (item.note) {
-      ctx.fillStyle = "#666";
-      ctx.font = "15px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      var noteY = pad + titleH / 2 + 52;
-      ctx.fillText(item.note, pad, noteY);
-      canvasH = noteY + 20 + imagesH + pad;
-      canvas.height = canvasH;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvasW, canvasH);
-      ctx.fillStyle = "#1a1a2e";
-      ctx.font = "bold 28px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      ctx.textBaseline = "middle";
-      ctx.fillText(item.name, pad, pad + titleH / 2);
-      ctx.fillStyle = "#888";
-      ctx.font = "16px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      ctx.fillText(infoParts.join("  |  "), pad, pad + titleH / 2 + 28);
-      ctx.fillStyle = "#666";
-      ctx.font = "15px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      ctx.fillText(item.note, pad, noteY);
-    }
-
-    var contentTop = item.note ? pad + titleH + 50 + gap : pad + titleH + gap;
-
+    var imgY = pad + nameH + gap;
     for (var r = 0; r < rows; r++) {
-      var rowH2 = 0;
-      for (var c = 0; c < cols; c++) {
-        var idx2 = r * 3 + c;
-        if (idx2 < loadedImgs.length && loadedImgs[idx2].h > rowH2) rowH2 = loadedImgs[idx2].h;
-      }
       var xOff = pad;
-      for (var c2 = 0; c2 < cols; c2++) {
-        var idx3 = r * 3 + c2;
-        if (idx3 >= loadedImgs.length) break;
-        var di = loadedImgs[idx3];
-        var dx = xOff + (imgMaxW - di.w) / 2;
-        var dy = contentTop + r * (maxRowH + gap) + (rowH2 - di.h) / 2;
+      for (var c = 0; c < cols; c++) {
+        var idx2 = r * cols + c;
+        if (idx2 >= loadedImgs.length) break;
+        var di = loadedImgs[idx2];
+        var dx = xOff + (imgSlots[0].maxW - di.w) / 2;
+        var dy = imgY + (rowHeights[r] - di.h) / 2;
         ctx.drawImage(di.el, dx, dy, di.w, di.h);
-        xOff += imgMaxW + gap;
+        xOff += imgSlots[0].maxW + gap;
       }
+      imgY += rowHeights[r] + gap;
     }
 
     var dataUrl = canvas.toDataURL("image/png");
