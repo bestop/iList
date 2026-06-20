@@ -139,8 +139,11 @@
       tr.className = 'user-row';
       var dateStr = '';
       if (u.created_at) {
-        var d = new Date(u.created_at);
-        dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        var ts = Number(u.created_at);
+        if (ts > 0) {
+          var d = new Date(ts);
+          dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
       }
       tr.innerHTML =
         '<td class="user-cell-name">' + escapeHtml(u.username) + '</td>' +
