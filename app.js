@@ -918,6 +918,8 @@
 
     if (itemList) {
       itemList.innerHTML = "";
+      var loadingState = document.getElementById('loading-state');
+      if (loadingState) loadingState.classList.add('hidden');
       if (filtered.length === 0) {
         if (emptyState) emptyState.classList.remove("hidden");
       } else {
