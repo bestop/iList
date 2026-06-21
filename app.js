@@ -409,6 +409,7 @@
   }
 
   if (page === "add") {
+    var editId = null;
     checkAuth().then(function (user) {
       if (!user) {
         alert('请先登录');
@@ -416,7 +417,7 @@
         return;
       }
       var urlParams = new URLSearchParams(window.location.search);
-      var editId = urlParams.get('id');
+      editId = urlParams.get('id');
 
       loadItems().then(function () {
         if (editId) {
