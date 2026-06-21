@@ -1,0 +1,135 @@
+.page {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding: 24rpx 28rpx;
+  padding-bottom: 120rpx;
+}
+
+.profile-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.avatar {
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+.username {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8rpx;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 6rpx 24rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.role-admin {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.role-user {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.menu-card {
+  background: #fff;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 28rpx;
+  border-bottom: 1rpx solid #f1f5f9;
+  font-size: 28rpx;
+  color: #1e293b;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-arrow {
+  font-size: 32rpx;
+  color: #94a3b8;
+}
+
+.logout-text {
+  color: #ef4444;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 32rpx;
+  border-bottom: 2rpx solid #f1f5f9;
+}
+
+.auth-tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #94a3b8;
+  border-bottom: 2rpx solid transparent;
+  margin-bottom: -2rpx;
+}
+
+.auth-tab.active {
+  color: #4f46e5;
+  border-bottom-color: #4f46e5;
+}
+
+.input-group {
+  margin-bottom: 20rpx;
+}
+
+.auth-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: #f1f5f9;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+.auth-btn {
+  width: 100%;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #4f46e5;
+  color: #fff;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  margin-top: 24rpx;
+  border: none;
+}
+
+button::after {
+  border: none;
+}

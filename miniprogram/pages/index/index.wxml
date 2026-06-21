@@ -1,0 +1,75 @@
+<view class="page">
+  <view class="guest-banner" wx:if="{{!isLoggedIn}}">
+    <text>预览模式 — 登录后可管理商品</text>
+  </view>
+
+  <view class="toolbar">
+    <input class="search-input" placeholder="搜索商品名称 / 备注..." value="{{search}}" bindinput="onSearch" />
+    <view class="filter-row">
+      <picker class="picker" mode="selector" range="{{categories}}" value="{{categoryIdx}}" bindchange="onFilterCategory">
+        <view class="picker-display">
+          <text>{{categoryIdx === 0 ? '全部分类' : categories[categoryIdx]}}</text>
+          <text class="arrow">▼</text>
+        </view>
+      </picker>
+      <picker class="picker" mode="selector" range="{{statuses}}" value="{{statusIdx}}" bindchange="onFilterStatus">
+        <view class="picker-display">
+          <text>{{statusIdx === 0 ? '全部状态' : statuses[statusIdx]}}</text>
+          <text class="arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="stats-bar">
+    <text class="chip">共 {{filteredItems.length}} 件</text>
+    <text class="chip chip-accent">总计 ¥{{total}}</text>
+  </view>
+
+  <view class="loading-state" wx:if="{{loading}}">
+    <text>⏳ 加载中...</text>
+  </view>
+
+  <view class="empty-state" wx:elif="{{filteredItems.length === 0}}">
+    <text class="empty-icon">📦</text>
+    <text>还没有商品</text>
+    <navigator url="/pages/add/add" class="empty-link" wx:if="{{isLoggedIn}}">去添加第一件</navigator>
+  </view>
+
+  <view class="item-list" wx:else>
+    <view class="item-card {{isLoggedIn ? '' : 'readonly'}}" wx:for="{{filteredItems}}" wx:key="id" style="animation-delay: {{index * 0.04}}s">
+      <view class="card-image" wx:if="{{item.images.length > 0}}" bindtap="onPreviewImage" data-images="{{item.images}}" data-idx="0">
+        <image class="card-img" src="{{item.images[0]}}" mode="aspectFill" lazy-load="{{true}}" />
+        <view class="image-counter" wx:if="{{item.images.length > 1}}">{{item.images.length}}张</view>
+      </view>
+      <view class="card-image card-placeholder" wx:else>
+        <text class="placeholder-icon">📦</text>
+      </view>
+
+      <view class="card-body">
+        <view class="card-title">
+          <text class="card-name">{{item.name}}</text>
+          <text class="card-price">¥{{(item.price * item.qty).toFixed(2)}}</text>
+        </view>
+        <view class="card-meta">
+          <text class="tag">{{item.category}}</text>
+          <text class="status-badge status-{{item.status}}" bindtap="onToggleStatus" data-id="{{item.id}}" data-status="{{item.status}}">{{item.status}}</text>
+          <text class="meta-text">¥{{item.price.toFixed(2)}} × {{item.qty}}</text>
+        </view>
+        <view class="card-meta" wx:if="{{item.date || item.shop}}">
+          <text class="meta-text" wx:if="{{item.date}}">📅 {{item.date}}</text>
+          <text class="meta-text" wx:if="{{item.shop}}">🏪 {{item.shop}}</text>
+        </view>
+        <view class="card-note" wx:if="{{item.note}}">
+          <text>{{item.note}}</text>
+        </view>
+      </view>
+
+      <view class="card-footer" wx:if="{{isLoggedIn}}">
+        <button class="btn-snap" size="mini" bindtap="onSnapshot" data-id="{{item.id}}" data-name="{{item.name}}" data-images="{{item.images}}">📷</button>
+        <button class="btn-edit" size="mini" bindtap="onEdit" data-id="{{item.id}}">编辑</button>
+        <button class="btn-del" size="mini" bindtap="onDelete" data-id="{{item.id}}" data-name="{{item.name}}">删除</button>
+      </view>
+    </view>
+  </view>
+</view>

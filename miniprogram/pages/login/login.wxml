@@ -1,0 +1,52 @@
+<view class="page">
+  <view class="profile-card" wx:if="{{isLoggedIn}}">
+    <view class="avatar">👤</view>
+    <text class="username">{{user.username}}</text>
+    <text class="role-badge role-{{user.role}}">{{user.role === 'admin' ? '管理员' : '用户'}}</text>
+  </view>
+
+  <view class="menu-card" wx:if="{{isLoggedIn}}">
+    <view class="menu-item" bindtap="onGoAdmin" wx:if="{{user.role === 'admin'}}">
+      <text>👥 用户管理</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onExport">
+      <text>📤 导出数据</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onImport">
+      <text>📥 导入数据</text>
+      <text class="menu-arrow">›</text>
+    </view>
+    <view class="menu-item" bindtap="onLogout">
+      <text class="logout-text">退出登录</text>
+    </view>
+  </view>
+
+  <view class="auth-card" wx:else>
+    <view class="auth-tabs">
+      <text class="auth-tab {{activeTab === 'login' ? 'active' : ''}}" bindtap="onSwitchTab" data-tab="login">登录</text>
+      <text class="auth-tab {{activeTab === 'register' ? 'active' : ''}}" bindtap="onSwitchTab" data-tab="register">注册</text>
+    </view>
+
+    <view wx:if="{{activeTab === 'login'}}">
+      <view class="input-group">
+        <input class="auth-input" placeholder="用户名" value="{{loginUsername}}" bindinput="onInput" data-field="loginUsername" />
+      </view>
+      <view class="input-group">
+        <input class="auth-input" type="password" placeholder="密码" value="{{loginPassword}}" bindinput="onInput" data-field="loginPassword" />
+      </view>
+      <button class="auth-btn" bindtap="onLogin">登录</button>
+    </view>
+
+    <view wx:else>
+      <view class="input-group">
+        <input class="auth-input" placeholder="用户名" value="{{regUsername}}" bindinput="onInput" data-field="regUsername" />
+      </view>
+      <view class="input-group">
+        <input class="auth-input" type="password" placeholder="密码" value="{{regPassword}}" bindinput="onInput" data-field="regPassword" />
+      </view>
+      <button class="auth-btn" bindtap="onRegister">注册</button>
+    </view>
+  </view>
+</view>
