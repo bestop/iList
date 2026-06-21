@@ -168,6 +168,33 @@
     return div.innerHTML;
   }
 
+  function showToast(msg, type) {
+    type = type || 'info';
+    var container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    var el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function () {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, 3000);
+  }
+
+  function debounce(fn, delay) {
+    var timer = null;
+    return function () {
+      var ctx = this, args = arguments;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () { fn.apply(ctx, args); }, delay);
+    };
+  }
+
   function showAuthModal(mode) {
     var overlay = document.getElementById('auth-modal');
     var loginForm = document.getElementById('login-form');
@@ -365,7 +392,7 @@
     clearToken();
     currentUser = null;
     updateAuthUI();
-    alert('登录已过期，请重新登录');
+    showToast('登录已过期，请重新登录', 'error');
   }
 
   async function loadItemForEdit(id) {
@@ -379,7 +406,7 @@
         if (target) target = normalizeItem(target);
       } catch (error) {
         console.error('Error loading item:', error);
-        alert('加载商品失败，请重试');
+        showToast('加载商品失败，请重试', 'error');
         return;
       }
     } else {
@@ -403,8 +430,8 @@
       document.querySelector('.header-left .subtitle').textContent = "修改商品信息";
       document.querySelector('button[type="submit"]').textContent = "保存修改";
     } else {
-      alert('未找到该商品');
-      window.location.href = "index.html";
+      showToast('未找到该商品', 'error');
+      setTimeout(function () { window.location.href = "index.html"; }, 1500);
     }
   }
 
@@ -412,8 +439,8 @@
     var editId = null;
     checkAuth().then(function (user) {
       if (!user) {
-        alert('请先登录');
-        window.location.href = "index.html";
+        showToast('请先登录', 'error');
+        setTimeout(function () { window.location.href = "index.html"; }, 1500);
         return;
       }
       var urlParams = new URLSearchParams(window.location.search);
@@ -438,12 +465,12 @@
 
         files.forEach(function (file) {
           if (draftImages.length + added >= MAX_IMAGES) {
-            alert("最多上传 " + MAX_IMAGES + " 张图片");
+            showToast("最多上传 " + MAX_IMAGES + " 张图片", 'error');
             return;
           }
           if (!file.type.startsWith("image/")) return;
           if (file.size > MAX_IMAGE_SIZE) {
-            alert("图片「" + file.name + "」过大（>2MB），已跳过");
+            showToast("图片「" + file.name + "」过大（>2MB），已跳过", 'error');
             return;
           }
           var reader = new FileReader();
@@ -515,14 +542,14 @@
           if (updatedItem) {
             window.location.href = "index.html";
           } else {
-            alert('保存失败，请重试');
+            showToast('保存失败，请重试', 'error');
           }
         } else {
           var savedItem = await saveItem(item);
           if (savedItem) {
             window.location.href = "index.html";
           } else {
-            alert('添加失败，请重试');
+            showToast('添加失败，请重试', 'error');
           }
         }
       });
@@ -578,7 +605,7 @@
             });
             var data = await response.json();
             if (data.error) {
-              alert(data.error);
+              showToast(data.error, 'error');
               return;
             }
             setToken(data.token);
@@ -587,7 +614,7 @@
             updateAuthUI();
             loadItems().then(function () { render(); });
           } catch (err) {
-            alert('登录失败，请重试');
+            showToast('登录失败，请重试', 'error');
           }
         });
       }
@@ -607,7 +634,7 @@
             });
             var data = await response.json();
             if (data.error) {
-              alert(data.error);
+              showToast(data.error, 'error');
               return;
             }
             setToken(data.token);
@@ -616,16 +643,16 @@
             updateAuthUI();
             loadItems().then(function () { render(); });
             if (data.user.role === 'admin') {
-              alert('欢迎！你是第一个注册的用户，已自动成为管理员');
+              showToast('欢迎！你是第一个注册的用户，已自动成为管理员', 'success');
             }
           } catch (err) {
-            alert('注册失败，请重试');
+            showToast('注册失败，请重试', 'error');
           }
         });
       }
     }
 
-    if (searchInput) searchInput.addEventListener("input", render);
+    if (searchInput) searchInput.addEventListener("input", debounce(render, 200));
     if (filterCategory) filterCategory.addEventListener("change", render);
     if (filterStatus) filterStatus.addEventListener("change", render);
 
@@ -645,7 +672,7 @@
 
     if (importFile) {
       importFile.addEventListener("change", async function (e) {
-        if (!currentUser) { alert('请先登录'); return; }
+        if (!currentUser) { showToast('请先登录', 'error'); return; }
         var file = e.target.files && e.target.files[0];
         if (!file) return;
         var reader = new FileReader();
@@ -661,7 +688,7 @@
               }
             }
           } catch (err) {
-            alert("导入失败：文件不是有效的清单数据");
+            showToast("导入失败：文件不是有效的清单数据", 'error');
           } finally {
             importFile.value = "";
           }
@@ -687,7 +714,14 @@
           if (newIdx >= total) newIdx = 0;
           li.setAttribute("data-gallery-idx", newIdx);
           var imgEl = li.querySelector(".item-gallery-img");
-          if (imgEl) imgEl.src = images[newIdx];
+          if (imgEl) {
+            imgEl.classList.add('switching');
+            imgEl.src = images[newIdx];
+            imgEl.addEventListener('load', function hl() {
+              imgEl.classList.remove('switching');
+              imgEl.removeEventListener('load', hl);
+            }, { once: true });
+          }
           var cntEl = li.querySelector(".item-gallery-counter");
           if (cntEl) cntEl.textContent = (newIdx + 1) + "/" + total;
           return;
@@ -717,7 +751,7 @@
             try {
               await generateSnapshot(snapItem);
             } catch (err) {
-              alert('生成快照失败：' + err.message);
+              showToast('生成快照失败：' + err.message, 'error');
             }
             snapBtn.textContent = "📷";
             snapBtn.disabled = false;
@@ -766,8 +800,8 @@
   if (page === "admin") {
     checkAuth().then(function (user) {
       if (!user || user.role !== 'admin') {
-        alert('需要管理员权限');
-        window.location.href = "index.html";
+        showToast('需要管理员权限', 'error');
+        setTimeout(function () { window.location.href = "index.html"; }, 1500);
         return;
       }
       var userInfo = document.getElementById('user-info');
@@ -799,9 +833,9 @@
                 body: JSON.stringify({ id: userId, role: newRole })
               });
               var data = await response.json();
-              if (data.error) { alert(data.error); return; }
+              if (data.error) { showToast(data.error, 'error'); return; }
               loadUsers();
-            } catch (err) { alert('操作失败'); }
+            } catch (err) { showToast('操作失败', 'error'); }
           }
           return;
         }
@@ -817,9 +851,9 @@
                 body: JSON.stringify({ id: delId })
               });
               var data2 = await response2.json();
-              if (data2.error) { alert(data2.error); return; }
+              if (data2.error) { showToast(data2.error, 'error'); return; }
               loadUsers();
-            } catch (err) { alert('操作失败'); }
+            } catch (err) { showToast('操作失败', 'error'); }
           }
           return;
         }
@@ -925,8 +959,10 @@
       } else {
         if (emptyState) emptyState.classList.add("hidden");
         var frag = document.createDocumentFragment();
-        filtered.forEach(function (item) {
-          frag.appendChild(buildItem(item));
+        filtered.forEach(function (item, idx) {
+          var card = buildItem(item);
+          card.style.animationDelay = (idx * 0.04) + 's';
+          frag.appendChild(card);
         });
         itemList.appendChild(frag);
       }
