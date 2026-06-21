@@ -230,8 +230,12 @@ textarea {
   gap: 10px;
 }
 
-.image-uploader input[type="file"] {
-  font-size: 13px;
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  align-self: flex-start;
 }
 
 .image-preview-grid {

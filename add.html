@@ -83,7 +83,8 @@
         <div class="row">
           <label>商品图片（可上传多张，最多 9 张）</label>
           <div class="image-uploader">
-            <input type="file" id="image" accept="image/*" multiple />
+            <label class="btn-ghost upload-btn" for="image">📷 选择图片</label>
+            <input type="file" id="image" accept="image/*" multiple hidden />
             <div class="image-preview-grid" id="image-preview-grid"></div>
           </div>
         </div>
