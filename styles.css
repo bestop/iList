@@ -319,7 +319,9 @@ textarea {
 .row.actions-stretch a.btn-ghost,
 .row.actions-stretch button.btn-ghost {
   flex: 1;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
 }
 
